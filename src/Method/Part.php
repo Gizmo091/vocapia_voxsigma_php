@@ -28,7 +28,7 @@ final class Part extends AbstractMethod
             new Parameter('maxSpeakers', '-k', 'kopt'),
             new Parameter('speakerRange', '-k', 'kopt'), // Same as maxSpeakers, different format
             new Parameter('channel', '-n', 'nopt'),
-            new Parameter('dualChannel', '-qd', 'qopt', Parameter::TYPE_FLAG, 'd'),
+            new Parameter('dualChannel', '-q', 'qopt', Parameter::TYPE_FLAG, 'd'),
             new Parameter('threads', '-h', '', Parameter::TYPE_VALUE), // CLI only
             new Parameter('speakerListFile', '-sl', 'slfile', Parameter::TYPE_FILE),
             new Parameter('speakerModelSet', '-j', '', Parameter::TYPE_FILE), // CLI only
