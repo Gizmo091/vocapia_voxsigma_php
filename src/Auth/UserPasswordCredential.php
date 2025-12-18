@@ -21,4 +21,9 @@ final class UserPasswordCredential implements CredentialInterface
     {
         $curlOptions[\CURLOPT_USERPWD] = $this->username . ':' . $this->password;
     }
+
+    public function toCurlArgs(): array
+    {
+        return ['-u', $this->username . ':' . $this->password];
+    }
 }

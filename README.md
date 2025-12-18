@@ -230,6 +230,29 @@ $config = Configuration::rest(
 $vox = new VoxSigma($config);
 ```
 
+## Debugging (REST)
+
+Generate the equivalent curl command for debugging:
+
+```php
+$curl = $vox->trans()
+    ->model('fre')
+    ->file('/path/to/audio.wav')
+    ->toCurl();
+
+echo $curl;
+// curl -k -u user:password -F audiofile=@/path/to/audio.wav 'https://server/voxsigma?model=fre&method=vrxs_trans'
+```
+
+For async requests:
+
+```php
+$curl = $vox->trans()
+    ->model('fre')
+    ->file('/path/to/audio.wav')
+    ->toCurl(async: true);
+```
+
 ## Error Handling
 
 ```php

@@ -20,4 +20,9 @@ final class ApiKeyCredential implements CredentialInterface
     {
         $headers[] = 'api-key: ' . $this->apiKey;
     }
+
+    public function toCurlArgs(): array
+    {
+        return ['-H', 'api-key: ' . $this->apiKey];
+    }
 }

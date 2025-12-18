@@ -16,4 +16,11 @@ interface CredentialInterface
      * @param array<int, mixed> $curlOptions cURL options (passed by reference)
      */
     public function applyTo(array &$headers, array &$curlOptions): void;
+
+    /**
+     * Get curl command line arguments for authentication.
+     *
+     * @return array<string> Arguments for curl CLI (e.g., ['-u', 'user:pass'])
+     */
+    public function toCurlArgs(): array;
 }

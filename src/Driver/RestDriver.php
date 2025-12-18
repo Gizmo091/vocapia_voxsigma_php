@@ -148,6 +148,79 @@ final class RestDriver implements DriverInterface
     }
 
     /**
+     * Generate equivalent curl command for debugging.
+     *
+     * @param Request $request The request to convert
+     * @param bool $async Whether to generate async version
+     * @return string The curl command
+     */
+    public function toCurl(Request $request, bool $async = false): string
+    {
+        if ($async) {
+            $request = new Request(
+                method: $request->method,
+                parameters: array_merge($request->parameters, ['async' => true]),
+                audioFile: $request->audioFile,
+                audioContent: $request->audioContent,
+                textFile: $request->textFile,
+                stdin: $request->stdin,
+            );
+        }
+
+        $url = $this->buildUrl($request);
+        $parts = ['curl', '-k']; // -k for insecure (SSL verify off)
+
+        // Add authentication
+        $parts = array_merge($parts, $this->credential->toCurlArgs());
+
+        // Add files
+        if ($request->audioFile !== null) {
+            $parts[] = '-F';
+            $parts[] = 'audiofile=@' . $this->escapeArg($request->audioFile);
+        }
+
+        if ($request->textFile !== null) {
+            $parts[] = '-F';
+            $parts[] = 'textfile=@' . $this->escapeArg($request->textFile);
+        }
+
+        $params = $request->parameters;
+
+        if (isset($params['vocabularyFile'])) {
+            $parts[] = '-F';
+            $parts[] = 'vocfile=@' . $this->escapeArg($params['vocabularyFile']);
+        }
+
+        if (isset($params['languageListFile'])) {
+            $parts[] = '-F';
+            $parts[] = 'llfile=@' . $this->escapeArg($params['languageListFile']);
+        }
+
+        if (isset($params['speakerListFile'])) {
+            $parts[] = '-F';
+            $parts[] = 'slfile=@' . $this->escapeArg($params['speakerListFile']);
+        }
+
+        // Add URL (quoted)
+        $parts[] = $this->escapeArg($url);
+
+        return implode(' ', $parts);
+    }
+
+    /**
+     * Escape argument for shell.
+     */
+    private function escapeArg(string $arg): string
+    {
+        // If no special chars, return as-is
+        if (preg_match('/^[a-zA-Z0-9._\/:=-]+$/', $arg)) {
+            return $arg;
+        }
+        // Otherwise, single-quote it
+        return "'" . str_replace("'", "'\\''", $arg) . "'";
+    }
+
+    /**
      * Build the URL for a request.
      */
     private function buildUrl(Request $request): string

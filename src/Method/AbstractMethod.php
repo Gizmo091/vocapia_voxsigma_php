@@ -8,6 +8,7 @@ use Vocapia\Voxsigma\Driver\AsyncHandle;
 use Vocapia\Voxsigma\Driver\DriverInterface;
 use Vocapia\Voxsigma\Driver\Request;
 use Vocapia\Voxsigma\Driver\Response;
+use Vocapia\Voxsigma\Driver\RestDriver;
 
 /**
  * Abstract base class for VoxSigma methods.
@@ -151,5 +152,20 @@ abstract class AbstractMethod
     public function getAudioFile(): ?string
     {
         return $this->audioFile;
+    }
+
+    /**
+     * Generate equivalent curl command for debugging (REST driver only).
+     *
+     * @param bool $async Whether to generate async version
+     * @throws \LogicException If driver is not REST
+     */
+    public function toCurl(bool $async = false): string
+    {
+        if (!$this->driver instanceof RestDriver) {
+            throw new \LogicException('toCurl() is only available with REST driver.');
+        }
+
+        return $this->driver->toCurl($this->toRequest(), $async);
     }
 }
