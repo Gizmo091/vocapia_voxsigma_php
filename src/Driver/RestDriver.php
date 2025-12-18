@@ -173,6 +173,12 @@ final class RestDriver implements DriverInterface
         // Add authentication
         $parts = array_merge($parts, $this->credential->toCurlArgs());
 
+        // Add translated parameters as form fields
+        foreach ($this->translateParameters($request) as $key => $value) {
+            $parts[] = '-F';
+            $parts[] = $key . '=' . $this->escapeArg((string) $value);
+        }
+
         // Add files
         if ($request->audioFile !== null) {
             $parts[] = '-F';
@@ -225,12 +231,8 @@ final class RestDriver implements DriverInterface
      */
     private function buildUrl(Request $request): string
     {
-        $params = $this->translateParameters($request);
-
-        // Add method
-        $params['method'] = $request->method;
-
-        return $this->baseUrl . '/voxsigma?' . http_build_query($params);
+        // Only method goes in URL, all other params go as POST fields
+        return $this->baseUrl . '/voxsigma?method=' . urlencode($request->method);
     }
 
     /**
@@ -241,6 +243,11 @@ final class RestDriver implements DriverInterface
     private function buildPostFields(Request $request): array
     {
         $fields = [];
+
+        // Add all translated parameters as form fields
+        foreach ($this->translateParameters($request) as $key => $value) {
+            $fields[$key] = (string) $value;
+        }
 
         // Audio file
         if ($request->audioFile !== null) {

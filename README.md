@@ -241,7 +241,7 @@ $curl = $vox->trans()
     ->toCurl();
 
 echo $curl;
-// curl -k -u user:password -F audiofile=@/path/to/audio.wav 'https://server/voxsigma?model=fre&method=vrxs_trans'
+// curl -k -u user:password -F model=fre -F audiofile=@/path/to/audio.wav 'https://server/voxsigma?method=vrxs_trans'
 ```
 
 For async requests:
