@@ -16,4 +16,12 @@ final class Hello extends AbstractMethod
     {
         return 'hello';
     }
+
+    /**
+     * @inheritDoc
+     */
+    protected static function defineParameters(): array
+    {
+        return [];
+    }
 }

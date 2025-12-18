@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Vocapia\Voxsigma\Method;
 
+use Vocapia\Voxsigma\Parameter\Parameter;
+
 /**
  * VoxSigma transcription method (vrxs_trans / vrbs_trans / vrcts_trans).
  *
@@ -14,6 +16,30 @@ final class Trans extends AbstractMethod
     public function getMethodName(): string
     {
         return 'vrxs_trans';
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected static function defineParameters(): array
+    {
+        return array_merge(static::commonParameters(), [
+            new Parameter('model', '-l', 'model'),
+            new Parameter('forceLanguage', '-l:', 'forcelang', Parameter::TYPE_FLAG),
+            new Parameter('maxSpeakers', '-k', 'kopt'),
+            new Parameter('lidDuration', '-dl', 'dlopt'),
+            new Parameter('lidThreshold', '-ql', 'qlopt'),
+            new Parameter('lidVersion', '-r', 'ropt'),
+            new Parameter('dualChannel', '-qd', 'qopt', Parameter::TYPE_FLAG, 'd'),
+            new Parameter('noPartitioning', '-qp', 'qopt', Parameter::TYPE_FLAG, 'p'),
+            new Parameter('quality', '-q', 'qopt'),
+            new Parameter('threads', '-h', '', Parameter::TYPE_VALUE), // CLI only
+            new Parameter('timeout', '-e', '', Parameter::TYPE_VALUE), // CLI only
+            new Parameter('withDtmf', '-x', '', Parameter::TYPE_FLAG), // CLI only
+            new Parameter('vocabularyFile', '-a', 'vocfile', Parameter::TYPE_FILE),
+            new Parameter('languageListFile', '-m', 'llfile', Parameter::TYPE_FILE),
+            new Parameter('userModel', '-u', 'usermodel'),
+        ]);
     }
 
     /**

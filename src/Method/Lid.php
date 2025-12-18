@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Vocapia\Voxsigma\Method;
 
+use Vocapia\Voxsigma\Parameter\Parameter;
+
 /**
  * VoxSigma language identification method (vrxs_lid).
  *
@@ -14,6 +16,21 @@ final class Lid extends AbstractMethod
     public function getMethodName(): string
     {
         return 'vrxs_lid';
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected static function defineParameters(): array
+    {
+        return array_merge(static::commonParameters(), [
+            new Parameter('model', '-l', 'model'),
+            new Parameter('duration', '-dl', 'dlopt'),
+            new Parameter('threshold', '-ql', 'qlopt'),
+            new Parameter('version', '-r', 'ropt'),
+            new Parameter('threads', '-h', '', Parameter::TYPE_VALUE), // CLI only
+            new Parameter('languageListFile', '-m', 'llfile', Parameter::TYPE_FILE),
+        ]);
     }
 
     /**

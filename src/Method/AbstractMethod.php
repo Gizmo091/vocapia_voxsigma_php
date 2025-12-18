@@ -9,6 +9,8 @@ use Vocapia\Voxsigma\Driver\DriverInterface;
 use Vocapia\Voxsigma\Driver\Request;
 use Vocapia\Voxsigma\Driver\Response;
 use Vocapia\Voxsigma\Driver\RestDriver;
+use Vocapia\Voxsigma\Parameter\Parameter;
+use Vocapia\Voxsigma\Parameter\ParameterCollection;
 
 /**
  * Abstract base class for VoxSigma methods.
@@ -18,6 +20,9 @@ use Vocapia\Voxsigma\Driver\RestDriver;
  */
 abstract class AbstractMethod
 {
+    /** @var array<class-string, ParameterCollection> */
+    private static array $parametersCache = [];
+
     /** @var array<string, mixed> */
     protected array $parameters = [];
 
@@ -30,6 +35,38 @@ abstract class AbstractMethod
      * Get the VoxSigma method name (e.g., 'vrxs_trans', 'vrxs_part').
      */
     abstract public function getMethodName(): string;
+
+    /**
+     * Define the parameters supported by this method.
+     *
+     * @return array<Parameter>
+     */
+    abstract protected static function defineParameters(): array;
+
+    /**
+     * Get the parameter collection for this method (singleton).
+     */
+    public static function parameters(): ParameterCollection
+    {
+        $class = static::class;
+        if (!isset(self::$parametersCache[$class])) {
+            self::$parametersCache[$class] = new ParameterCollection(static::defineParameters());
+        }
+        return self::$parametersCache[$class];
+    }
+
+    /**
+     * Common parameters shared across methods.
+     *
+     * @return array<Parameter>
+     */
+    protected static function commonParameters(): array
+    {
+        return [
+            new Parameter('verbose', '-v', 'verbose', Parameter::TYPE_FLAG),
+            new Parameter('priority', '-p:', 'priority'),
+        ];
+    }
 
     /**
      * Set the audio file path.
@@ -102,6 +139,7 @@ abstract class AbstractMethod
         return new Request(
             method: $this->getMethodName(),
             parameters: $this->parameters,
+            parameterDefinitions: static::parameters(),
             audioFile: $this->audioFile,
             audioContent: $this->audioContent,
             textFile: $this->textFile,

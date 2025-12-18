@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Vocapia\Voxsigma\Driver;
 
 use Vocapia\Voxsigma\Exception\DriverException;
+use Vocapia\Voxsigma\Parameter\Parameter;
 
 /**
  * CLI driver for executing VoxSigma binaries locally.
@@ -197,119 +198,59 @@ final class CliDriver implements DriverInterface
     {
         $args = [];
         $params = $request->parameters;
+        $definitions = $request->parameterDefinitions;
 
-        // Model / Language
+        // If no parameter definitions, return empty (shouldn't happen in normal use)
+        if ($definitions === null) {
+            return $args;
+        }
+
+        // Special case: model with forceLanguage modifier
         if (isset($params['model'])) {
             $forceLanguage = $params['forceLanguage'] ?? false;
             $prefix = $forceLanguage ? '-l:' : '-l';
             $args[] = $prefix . $params['model'];
         }
 
-        // Max speakers
-        if (isset($params['maxSpeakers'])) {
-            $args[] = '-k' . $params['maxSpeakers'];
+        // Parameters to skip (handled specially or via other params)
+        $skipParams = ['model', 'forceLanguage', 'outputFile', 'tmpDir'];
+
+        // Iterate through all parameters and translate using definitions
+        foreach ($params as $name => $value) {
+            if (in_array($name, $skipParams, true)) {
+                continue;
+            }
+
+            $param = $definitions->findByName($name);
+            if ($param === null) {
+                continue; // Unknown parameter, skip
+            }
+
+            // Skip if CLI option is empty (REST-only parameter)
+            if ($param->cliOption === '') {
+                continue;
+            }
+
+            // Use Parameter to generate CLI args
+            $cliArgs = $param->toCliArgs($value);
+
+            // Escape file paths
+            if ($param->type === Parameter::TYPE_FILE && !empty($cliArgs)) {
+                $cliArgs[count($cliArgs) - 1] = escapeshellarg($cliArgs[count($cliArgs) - 1]);
+            }
+
+            $args = array_merge($args, $cliArgs);
         }
 
-        // Speaker range (min:max)
-        if (isset($params['speakerRange'])) {
-            $args[] = '-k' . $params['speakerRange'];
-        }
-
-        // Channel
-        if (isset($params['channel'])) {
-            $args[] = '-n' . $params['channel'];
-        }
-
-        // LID duration
-        if (isset($params['lidDuration'])) {
-            $args[] = '-dl' . $params['lidDuration'];
-        }
-
-        // LID threshold
-        if (isset($params['lidThreshold'])) {
-            $args[] = '-ql' . $params['lidThreshold'];
-        }
-
-        // LID version
-        if (isset($params['lidVersion'])) {
-            $args[] = '-r' . $params['lidVersion'];
-        }
-
-        // Threads
-        if (isset($params['threads'])) {
-            $args[] = '-h' . $params['threads'];
-        }
-
-        // Timeout
-        if (isset($params['timeout'])) {
-            $args[] = '-e' . $params['timeout'];
-        }
-
-        // Quality level
-        if (isset($params['quality'])) {
-            $args[] = '-q' . $params['quality'];
-        }
-
-        // Dual channel
-        if (!empty($params['dualChannel'])) {
-            $args[] = '-qd';
-        }
-
-        // No partitioning
-        if (!empty($params['noPartitioning'])) {
-            $args[] = '-qp';
-        }
-
-        // With DTMF
-        if (!empty($params['withDtmf'])) {
-            $args[] = '-x';
-        }
-
-        // Verbose
-        if (!empty($params['verbose'])) {
-            $args[] = '-v';
-        }
-
-        // Output file
+        // Handle outputFile and tmpDir (not in Parameter definitions but in AbstractMethod)
         if (isset($params['outputFile'])) {
             $args[] = '-o';
             $args[] = escapeshellarg($params['outputFile']);
         }
 
-        // Tmp dir
         if (isset($params['tmpDir'])) {
             $args[] = '-t';
             $args[] = escapeshellarg($params['tmpDir']);
-        }
-
-        // Vocabulary file
-        if (isset($params['vocabularyFile'])) {
-            $args[] = '-a';
-            $args[] = escapeshellarg($params['vocabularyFile']);
-        }
-
-        // Language list file
-        if (isset($params['languageListFile'])) {
-            $args[] = '-m';
-            $args[] = escapeshellarg($params['languageListFile']);
-        }
-
-        // Speaker list file
-        if (isset($params['speakerListFile'])) {
-            $args[] = '-sl';
-            $args[] = escapeshellarg($params['speakerListFile']);
-        }
-
-        // Speaker model set
-        if (isset($params['speakerModelSet'])) {
-            $args[] = '-j';
-            $args[] = escapeshellarg($params['speakerModelSet']);
-        }
-
-        // User model (adapted LM)
-        if (isset($params['userModel'])) {
-            $args[] = '-u';
-            $args[] = escapeshellarg($params['userModel']);
         }
 
         return $args;

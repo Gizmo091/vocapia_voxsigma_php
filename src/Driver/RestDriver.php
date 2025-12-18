@@ -6,6 +6,7 @@ namespace Vocapia\Voxsigma\Driver;
 
 use Vocapia\Voxsigma\Auth\CredentialInterface;
 use Vocapia\Voxsigma\Exception\DriverException;
+use Vocapia\Voxsigma\Parameter\Parameter;
 
 /**
  * REST driver for executing VoxSigma via remote API.
@@ -190,21 +191,18 @@ final class RestDriver implements DriverInterface
             $parts[] = 'textfile=@' . $this->escapeArg($request->textFile);
         }
 
-        $params = $request->parameters;
-
-        if (isset($params['vocabularyFile'])) {
-            $parts[] = '-F';
-            $parts[] = 'vocfile=@' . $this->escapeArg($params['vocabularyFile']);
-        }
-
-        if (isset($params['languageListFile'])) {
-            $parts[] = '-F';
-            $parts[] = 'llfile=@' . $this->escapeArg($params['languageListFile']);
-        }
-
-        if (isset($params['speakerListFile'])) {
-            $parts[] = '-F';
-            $parts[] = 'slfile=@' . $this->escapeArg($params['speakerListFile']);
+        // Add file parameters using Parameter definitions
+        $definitions = $request->parameterDefinitions;
+        if ($definitions !== null) {
+            foreach ($request->parameters as $name => $value) {
+                $param = $definitions->findByName($name);
+                if ($param !== null && $param->type === Parameter::TYPE_FILE && $param->restParam !== '') {
+                    if (is_string($value)) {
+                        $parts[] = '-F';
+                        $parts[] = $param->restParam . '=@' . $this->escapeArg($value);
+                    }
+                }
+            }
         }
 
         // Add URL (quoted)
@@ -270,19 +268,17 @@ final class RestDriver implements DriverInterface
             $fields['textfile'] = new \CURLFile($request->textFile);
         }
 
-        // Additional files from parameters
-        $params = $request->parameters;
-
-        if (isset($params['vocabularyFile']) && file_exists($params['vocabularyFile'])) {
-            $fields['vocfile'] = new \CURLFile($params['vocabularyFile']);
-        }
-
-        if (isset($params['languageListFile']) && file_exists($params['languageListFile'])) {
-            $fields['llfile'] = new \CURLFile($params['languageListFile']);
-        }
-
-        if (isset($params['speakerListFile']) && file_exists($params['speakerListFile'])) {
-            $fields['slfile'] = new \CURLFile($params['speakerListFile']);
+        // Add file parameters using Parameter definitions
+        $definitions = $request->parameterDefinitions;
+        if ($definitions !== null) {
+            foreach ($request->parameters as $name => $value) {
+                $param = $definitions->findByName($name);
+                if ($param !== null && $param->type === Parameter::TYPE_FILE && $param->restParam !== '') {
+                    if (is_string($value) && file_exists($value)) {
+                        $fields[$param->restParam] = new \CURLFile($value);
+                    }
+                }
+            }
         }
 
         return $fields;
@@ -295,97 +291,71 @@ final class RestDriver implements DriverInterface
      */
     private function translateParameters(Request $request): array
     {
-        $params = [];
-        $p = $request->parameters;
+        $result = [];
+        $params = $request->parameters;
+        $definitions = $request->parameterDefinitions;
 
-        // Model / Language
-        if (isset($p['model'])) {
-            $params['model'] = $p['model'];
-        }
-
-        // Force language (model is obligatory)
-        if (!empty($p['forceLanguage'])) {
-            $params['forcelang'] = '1';
+        // If no parameter definitions, return empty (shouldn't happen in normal use)
+        if ($definitions === null) {
+            return $result;
         }
 
-        // Max speakers
-        if (isset($p['maxSpeakers'])) {
-            $params['kopt'] = $p['maxSpeakers'];
+        // Parameters that need special handling (combined into qopt)
+        $qoptParams = ['dualChannel', 'noPartitioning', 'quality'];
+        $qoptValue = '';
+
+        // Parameters to skip (handled specially or are files)
+        $skipParams = ['async', 'vocabularyFile', 'languageListFile', 'speakerListFile'];
+
+        // Iterate through all parameters and translate using definitions
+        foreach ($params as $name => $value) {
+            if (in_array($name, $skipParams, true)) {
+                continue;
+            }
+
+            $param = $definitions->findByName($name);
+            if ($param === null) {
+                continue; // Unknown parameter, skip
+            }
+
+            // Skip if REST param is empty (CLI-only parameter)
+            if ($param->restParam === '') {
+                continue;
+            }
+
+            // Skip file parameters (handled separately as CURLFile)
+            if ($param->type === Parameter::TYPE_FILE) {
+                continue;
+            }
+
+            // Special handling for qopt (combining multiple flags)
+            if ($param->restParam === 'qopt') {
+                if ($param->type === Parameter::TYPE_FLAG && $value) {
+                    $qoptValue .= $param->flagValue ?? '';
+                } elseif ($param->type === Parameter::TYPE_VALUE) {
+                    $qoptValue .= (string) $value;
+                }
+                continue;
+            }
+
+            // Use Parameter to generate REST field
+            $fields = $param->toRestField($value);
+            foreach ($fields as $key => $val) {
+                $result[$key] = $val;
+            }
         }
 
-        // Speaker range (min:max)
-        if (isset($p['speakerRange'])) {
-            $params['kopt'] = $p['speakerRange'];
+        // Add combined qopt if any
+        if ($qoptValue !== '') {
+            $result['qopt'] = $qoptValue;
         }
 
-        // Channel
-        if (isset($p['channel'])) {
-            $params['nopt'] = $p['channel'];
+        // Handle async parameter (not in definitions)
+        if (!empty($params['async'])) {
+            $result['async'] = '1';
         }
 
-        // LID duration
-        if (isset($p['lidDuration'])) {
-            $params['dlopt'] = $p['lidDuration'];
-        }
-
-        // LID threshold
-        if (isset($p['lidThreshold'])) {
-            $params['qlopt'] = $p['lidThreshold'];
-        }
-
-        // LID version
-        if (isset($p['lidVersion'])) {
-            $params['ropt'] = $p['lidVersion'];
-        }
-
-        // Quality options (can be combined)
-        $qopt = [];
-        if (!empty($p['dualChannel'])) {
-            $qopt[] = 'd';
-        }
-        if (!empty($p['noPartitioning'])) {
-            $qopt[] = 'p';
-        }
-        if (!empty($qopt)) {
-            $params['qopt'] = implode('', $qopt);
-        }
-
-        // Quality level
-        if (isset($p['quality'])) {
-            $params['qopt'] = ($params['qopt'] ?? '') . $p['quality'];
-        }
-
-        // Verbose
-        if (!empty($p['verbose'])) {
-            $params['verbose'] = '1';
-        }
-
-        // Async
-        if (!empty($p['async'])) {
-            $params['async'] = '1';
-        }
-
-        // Priority
-        if (isset($p['priority'])) {
-            $params['priority'] = $p['priority'];
-        }
-
-        // Session ID (for status check)
-        if (isset($p['session'])) {
-            $params['session'] = $p['session'];
-        }
-
-        // User model (adapted LM)
-        if (isset($p['userModel'])) {
-            $params['usermodel'] = $p['userModel'];
-        }
-
-        // Speaker segmentation for alignment
-        if (!empty($p['speakerSegmentation'])) {
-            $params['qsopt'] = '1';
-        }
-
-        return $params;
+        return $result;
     }
 
     /**

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Vocapia\Voxsigma\Driver;
 
+use Vocapia\Voxsigma\Parameter\ParameterCollection;
+
 /**
  * Represents a VoxSigma request (driver-agnostic).
  *
@@ -15,6 +17,7 @@ final class Request
     /**
      * @param string $method The VoxSigma method name (e.g., 'vrxs_trans', 'vrxs_part')
      * @param array<string, mixed> $parameters Method parameters (driver-agnostic names)
+     * @param ParameterCollection|null $parameterDefinitions Parameter definitions for translation
      * @param string|null $audioFile Path to the audio file
      * @param string|null $audioContent Raw audio content (alternative to audioFile)
      * @param string|null $textFile Path to text file (for alignment)
@@ -23,6 +26,7 @@ final class Request
     public function __construct(
         public readonly string $method,
         public readonly array $parameters = [],
+        public readonly ?ParameterCollection $parameterDefinitions = null,
         public readonly ?string $audioFile = null,
         public readonly ?string $audioContent = null,
         public readonly ?string $textFile = null,
@@ -40,6 +44,7 @@ final class Request
         return new self(
             method: $this->method,
             parameters: array_merge($this->parameters, $parameters),
+            parameterDefinitions: $this->parameterDefinitions,
             audioFile: $this->audioFile,
             audioContent: $this->audioContent,
             textFile: $this->textFile,
@@ -55,6 +60,7 @@ final class Request
         return new self(
             method: $this->method,
             parameters: $this->parameters,
+            parameterDefinitions: $this->parameterDefinitions,
             audioFile: $audioFile,
             audioContent: null,
             textFile: $this->textFile,
@@ -70,6 +76,7 @@ final class Request
         return new self(
             method: $this->method,
             parameters: $this->parameters,
+            parameterDefinitions: $this->parameterDefinitions,
             audioFile: $this->audioFile,
             audioContent: $this->audioContent,
             textFile: $this->textFile,

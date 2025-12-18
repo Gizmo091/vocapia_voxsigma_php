@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Vocapia\Voxsigma\Method;
 
+use Vocapia\Voxsigma\Parameter\Parameter;
+
 /**
  * VoxSigma forced alignment method (vrbs_align).
  *
@@ -15,6 +17,18 @@ final class Align extends AbstractMethod
     public function getMethodName(): string
     {
         return 'vrbs_align';
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected static function defineParameters(): array
+    {
+        return array_merge(static::commonParameters(), [
+            new Parameter('model', '-l', 'model'),
+            new Parameter('speakerSegmentation', '-qs', 'qsopt', Parameter::TYPE_FLAG),
+            new Parameter('quality', '-q', 'qopt'),
+        ]);
     }
 
     /**
