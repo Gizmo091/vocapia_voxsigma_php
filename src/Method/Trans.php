@@ -30,8 +30,8 @@ final class Trans extends AbstractMethod
             new Parameter('lidDuration', '-dl', 'dlopt'),
             new Parameter('lidThreshold', '-ql', 'qlopt'),
             new Parameter('lidVersion', '-r', 'ropt'),
-            new Parameter('dualChannel', '-qd', 'qopt', Parameter::TYPE_FLAG, 'd'),
-            new Parameter('noPartitioning', '-qp', 'qopt', Parameter::TYPE_FLAG, 'p'),
+            new Parameter('dualChannel', '-q', 'qopt', Parameter::TYPE_FLAG, 'd'),
+            new Parameter('noPartitioning', '-q', 'qopt', Parameter::TYPE_FLAG, 'p'),
             new Parameter('quality', '-q', 'qopt'),
             new Parameter('threads', '-h', '', Parameter::TYPE_VALUE), // CLI only
             new Parameter('timeout', '-e', '', Parameter::TYPE_VALUE), // CLI only

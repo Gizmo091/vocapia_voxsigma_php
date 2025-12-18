@@ -212,8 +212,11 @@ final class CliDriver implements DriverInterface
             $args[] = $prefix . $params['model'];
         }
 
-        // Parameters to skip (handled specially or via other params)
+        // Parameters to skip (handled specially)
         $skipParams = ['model', 'forceLanguage', 'outputFile', 'tmpDir'];
+
+        // Collect combined options (like -q with d, p, and quality value)
+        $combinedOptions = [];
 
         // Iterate through all parameters and translate using definitions
         foreach ($params as $name => $value) {
@@ -231,6 +234,20 @@ final class CliDriver implements DriverInterface
                 continue;
             }
 
+            // Handle combined options (multiple params sharing same CLI option)
+            if ($param->flagValue !== null || $this->isSharedCliOption($param->cliOption, $definitions, $params)) {
+                $option = $param->cliOption;
+                if (!isset($combinedOptions[$option])) {
+                    $combinedOptions[$option] = '';
+                }
+                if ($param->type === Parameter::TYPE_FLAG && $value) {
+                    $combinedOptions[$option] .= $param->flagValue ?? '';
+                } elseif ($param->type === Parameter::TYPE_VALUE) {
+                    $combinedOptions[$option] .= (string) $value;
+                }
+                continue;
+            }
+
             // Use Parameter to generate CLI args
             $cliArgs = $param->toCliArgs($value);
 
@@ -240,6 +257,13 @@ final class CliDriver implements DriverInterface
             }
 
             $args = array_merge($args, $cliArgs);
+        }
+
+        // Add combined options
+        foreach ($combinedOptions as $option => $value) {
+            if ($value !== '') {
+                $args[] = $option . $value;
+            }
         }
 
         // Handle outputFile and tmpDir (not in Parameter definitions but in AbstractMethod)
@@ -254,6 +278,26 @@ final class CliDriver implements DriverInterface
         }
 
         return $args;
+    }
+
+    /**
+     * Check if a CLI option is shared by multiple parameters.
+     *
+     * @param array<string, mixed> $params
+     */
+    private function isSharedCliOption(string $option, \Vocapia\Voxsigma\Parameter\ParameterCollection $definitions, array $params): bool
+    {
+        $count = 0;
+        foreach ($params as $name => $value) {
+            $param = $definitions->findByName($name);
+            if ($param !== null && $param->cliOption === $option) {
+                $count++;
+                if ($count > 1) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
