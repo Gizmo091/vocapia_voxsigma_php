@@ -12,10 +12,10 @@ final class ParameterCollection
     /** @var array<string, Parameter> Indexed by name */
     private array $byName = [];
 
-    /** @var array<string, Parameter> Indexed by CLI option */
+    /** @var array<string, array<Parameter>> Indexed by CLI option (can have multiple) */
     private array $byCli = [];
 
-    /** @var array<string, Parameter> Indexed by REST param */
+    /** @var array<string, array<Parameter>> Indexed by REST param (can have multiple) */
     private array $byRest = [];
 
     /**
@@ -25,8 +25,14 @@ final class ParameterCollection
     {
         foreach ($parameters as $param) {
             $this->byName[$param->name] = $param;
-            $this->byCli[$param->cliOption] = $param;
-            $this->byRest[$param->restParam] = $param;
+
+            if ($param->cliOption !== '') {
+                $this->byCli[$param->cliOption][] = $param;
+            }
+
+            if ($param->restParam !== '') {
+                $this->byRest[$param->restParam][] = $param;
+            }
         }
     }
 
@@ -39,29 +45,95 @@ final class ParameterCollection
     }
 
     /**
-     * Find parameter by CLI option.
+     * Find parameter by CLI option and optional value.
+     *
+     * @param string $option CLI option (e.g., '-q')
+     * @param string|null $value Optional value to match against flagValue (e.g., 'd' for dualChannel)
      */
-    public function findByCli(string $option): ?Parameter
+    public function findByCli(string $option, ?string $value = null): ?Parameter
     {
-        // Try exact match first
-        if (isset($this->byCli[$option])) {
-            return $this->byCli[$option];
+        // Normalize option with dash prefix
+        $normalizedOption = str_starts_with($option, '-') ? $option : '-' . $option;
+
+        $candidates = $this->byCli[$normalizedOption] ?? $this->byCli[$option] ?? [];
+
+        if (empty($candidates)) {
+            return null;
         }
 
-        // Try with dash prefix
-        if (!str_starts_with($option, '-')) {
-            return $this->byCli['-' . $option] ?? null;
+        // If no value specified, return first (or only) parameter
+        if ($value === null) {
+            return $candidates[0];
+        }
+
+        // Find parameter matching the value
+        foreach ($candidates as $param) {
+            // Flag parameter with matching flagValue
+            if ($param->type === Parameter::TYPE_FLAG && $param->flagValue === $value) {
+                return $param;
+            }
+            // Regular value parameter (no flagValue) accepts any value
+            if ($param->type === Parameter::TYPE_VALUE && $param->flagValue === null) {
+                return $param;
+            }
         }
 
         return null;
     }
 
     /**
-     * Find parameter by REST param name.
+     * Find parameter by REST param and optional value.
+     *
+     * @param string $param REST param name (e.g., 'qopt')
+     * @param string|null $value Optional value to match against flagValue
      */
-    public function findByRest(string $param): ?Parameter
+    public function findByRest(string $param, ?string $value = null): ?Parameter
     {
-        return $this->byRest[$param] ?? null;
+        $candidates = $this->byRest[$param] ?? [];
+
+        if (empty($candidates)) {
+            return null;
+        }
+
+        // If no value specified, return first (or only) parameter
+        if ($value === null) {
+            return $candidates[0];
+        }
+
+        // Find parameter matching the value
+        foreach ($candidates as $candidate) {
+            // Flag parameter with matching flagValue
+            if ($candidate->type === Parameter::TYPE_FLAG && $candidate->flagValue === $value) {
+                return $candidate;
+            }
+            // Regular value parameter (no flagValue) accepts any value
+            if ($candidate->type === Parameter::TYPE_VALUE && $candidate->flagValue === null) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get all parameters sharing a CLI option.
+     *
+     * @return array<Parameter>
+     */
+    public function findAllByCli(string $option): array
+    {
+        $normalizedOption = str_starts_with($option, '-') ? $option : '-' . $option;
+        return $this->byCli[$normalizedOption] ?? $this->byCli[$option] ?? [];
+    }
+
+    /**
+     * Get all parameters sharing a REST param.
+     *
+     * @return array<Parameter>
+     */
+    public function findAllByRest(string $param): array
+    {
+        return $this->byRest[$param] ?? [];
     }
 
     /**
