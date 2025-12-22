@@ -19,7 +19,6 @@ final class Kws extends AbstractMethod
 {
     private ?KeywordList $keywordList = null;
     private ?FileList $inputFileList = null;
-    private string $tmpDir = '/tmp';
 
     public function getMethodName(): string
     {
@@ -36,17 +35,6 @@ final class Kws extends AbstractMethod
             new Parameter('inputListFile', '-kf', '', Parameter::TYPE_FILE),
             new Parameter('context', '-kc', ''),
         ]);
-    }
-
-    /**
-     * Set the temporary directory for generated files.
-     *
-     * @param string $path Path to temp directory
-     */
-    public function tmpDir(string $path): self
-    {
-        $this->tmpDir = $path;
-        return $this;
     }
 
     /**
@@ -139,13 +127,16 @@ final class Kws extends AbstractMethod
      */
     public function toRequest(): Request
     {
+        // Get temp directory from parameters or use default
+        $tmpDir = $this->parameters['tmpDir'] ?? '/tmp';
+
         // Generate temp files if using object lists
         if ($this->keywordList !== null) {
-            $this->parameters['keywordListFile'] = $this->keywordList->writeToTempFile($this->tmpDir);
+            $this->parameters['keywordListFile'] = $this->keywordList->writeToTempFile($tmpDir);
         }
 
         if ($this->inputFileList !== null) {
-            $this->parameters['inputListFile'] = $this->inputFileList->writeToTempFile($this->tmpDir);
+            $this->parameters['inputListFile'] = $this->inputFileList->writeToTempFile($tmpDir);
         }
 
         return parent::toRequest();
