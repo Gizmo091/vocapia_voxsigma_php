@@ -15,6 +15,7 @@ use Vocapia\Voxsigma\Method\AbstractMethod;
 use Vocapia\Voxsigma\Method\Align;
 use Vocapia\Voxsigma\Method\Dtmf;
 use Vocapia\Voxsigma\Method\Hello;
+use Vocapia\Voxsigma\Method\Kws;
 use Vocapia\Voxsigma\Method\Lid;
 use Vocapia\Voxsigma\Method\Part;
 use Vocapia\Voxsigma\Method\Status;
@@ -141,6 +142,16 @@ final class VoxSigma
     public function dtmf(): Dtmf
     {
         return (new Dtmf())->withDriver($this->driver);
+    }
+
+    /**
+     * Create a keyword spotting method (CLI only).
+     *
+     * Searches for keywords phonetically and textually in transcription files.
+     */
+    public function kws(): Kws
+    {
+        return (new Kws())->withDriver($this->driver);
     }
 
     /**
