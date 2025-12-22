@@ -20,43 +20,51 @@ final class FileList
     /** @var string[] */
     private array $files = [];
 
+    /** @var array<string, true> Track added paths to prevent duplicates */
+    private array $addedPaths = [];
+
     public static function create(): self
     {
         return new self();
     }
 
     /**
-     * Create from an array of paths.
+     * Create from an array of paths (duplicates are silently ignored).
      *
      * @param string[] $paths
      */
     public static function from(array $paths): self
     {
         $list = new self();
-        $list->files = array_values($paths);
+        $list->addMany($paths);
         return $list;
     }
 
     /**
-     * Add a file path.
+     * Add a file path (duplicates are silently ignored).
      *
      * @param string $path Path to .kar or .xml file
      */
     public function add(string $path): self
     {
+        if (isset($this->addedPaths[$path])) {
+            return $this;
+        }
+
+        $this->addedPaths[$path] = true;
         $this->files[] = $path;
         return $this;
     }
 
     /**
-     * Add multiple file paths.
+     * Add multiple file paths (duplicates are silently ignored).
      *
      * @param string[] $paths
      */
     public function addMany(array $paths): self
     {
         foreach ($paths as $path) {
-            $this->files[] = $path;
+            $this->add($path);
         }
         return $this;
     }
