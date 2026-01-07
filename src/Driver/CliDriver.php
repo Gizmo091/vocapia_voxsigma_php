@@ -348,6 +348,11 @@ final class CliDriver implements DriverInterface
             }
         }
 
+        // Set VRXS_ROOT if not already set (parent of binPath)
+        if (!isset($env['VRXS_ROOT'])) {
+            $env['VRXS_ROOT'] = dirname($this->binPath);
+        }
+
         // Set VRXS_TMP if not already set
         if (!isset($env['VRXS_TMP'])) {
             $env['VRXS_TMP'] = $this->tmpDir;
