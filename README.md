@@ -124,6 +124,69 @@ $response = $vox->dtmf()
     ->run();
 ```
 
+### Keyword Spotting (kws) - CLI only
+
+Search for keywords phonetically and textually in transcription files:
+
+```php
+use Vocapia\Voxsigma\Model\KeywordList;
+use Vocapia\Voxsigma\Model\FileList;
+
+$response = $vox->kws()
+    ->keywordList(
+        KeywordList::create()
+            ->add('KW001', 0.5, 'hello world')
+            ->add('KW002', 0.4, 'bonjour')
+            ->addKeyword('keyword', 0.5)  // Auto-generated ID
+    )
+    ->inputFiles(
+        FileList::create()
+            ->add('/path/to/transcription1.kar')
+            ->add('/path/to/transcription2.kar')
+    )
+    ->context(5)  // Include 5 seconds of surrounding words
+    ->run();
+```
+
+Or use existing files:
+
+```php
+$response = $vox->kws()
+    ->keywordListFile('/path/to/keywords.kwl')
+    ->inputKarList('/path/to/files.klst')
+    ->context(5)
+    ->run();
+```
+
+**Keyword list file format (.kwl):**
+```
+KW001 0.5 hello world
+KW002 0.4 bonjour
+KW003 0.5 keyword
+```
+Columns: ID, threshold (0.0-1.0), keyword text
+
+**Input list file format (.klst):**
+```
+/path/to/file1.kar
+/path/to/file2.kar
+```
+
+### XML to KAR Converter (xml2kar) - CLI only
+
+Convert XML transcription files to KAR format for keyword spotting:
+
+```php
+$response = $vox->xml2kar()
+    ->xmlFile('/path/to/transcription.xml')
+    ->karFile('/path/to/output.kar')
+    ->run();
+
+if ($response->isSuccess()) {
+    // KAR file created at /path/to/output.kar
+}
+```
+
 ### Hello (REST connection test)
 
 ```php

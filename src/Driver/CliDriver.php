@@ -18,6 +18,9 @@ final class CliDriver implements DriverInterface
         private readonly string $binPath,
         private readonly string $tmpDir = '/tmp',
     ) {
+        if (!is_dir($binPath)) {
+            throw new DriverException("Binary directory does not exist: $binPath");
+        }
     }
 
     public function execute(Request $request): Response
@@ -172,10 +175,21 @@ final class CliDriver implements DriverInterface
 
     /**
      * Build the command string for a request.
+     *
+     * @throws DriverException If the binary does not exist
      */
     private function buildCommand(Request $request, bool $useStdin = false): string
     {
         $binary = $this->binPath . '/' . $request->method;
+
+        if (!is_file($binary)) {
+            throw new DriverException("Binary not found: $binary");
+        }
+
+        if (!is_executable($binary)) {
+            throw new DriverException("Binary is not executable: $binary");
+        }
+
         $args = $this->translateParameters($request);
 
         // Add audio file
@@ -184,6 +198,11 @@ final class CliDriver implements DriverInterface
             $args[] = escapeshellarg($request->audioFile);
         } elseif ($useStdin) {
             $args[] = '-'; // Read from stdin
+        }
+
+        // Add positional arguments at the end
+        foreach ($request->positionalArgs as $arg) {
+            $args[] = escapeshellarg($arg);
         }
 
         return $binary . ' ' . implode(' ', $args);

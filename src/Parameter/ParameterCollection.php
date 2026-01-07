@@ -178,3 +178,4 @@ final class ParameterCollection
         return $this->byName[$name];
     }
 }
+

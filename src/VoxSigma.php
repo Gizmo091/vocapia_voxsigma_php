@@ -15,10 +15,12 @@ use Vocapia\Voxsigma\Method\AbstractMethod;
 use Vocapia\Voxsigma\Method\Align;
 use Vocapia\Voxsigma\Method\Dtmf;
 use Vocapia\Voxsigma\Method\Hello;
+use Vocapia\Voxsigma\Method\Kws;
 use Vocapia\Voxsigma\Method\Lid;
 use Vocapia\Voxsigma\Method\Part;
 use Vocapia\Voxsigma\Method\Status;
 use Vocapia\Voxsigma\Method\Trans;
+use Vocapia\Voxsigma\Method\Xml2Kar;
 use Vocapia\Voxsigma\Pipeline\Pipeline;
 
 /**
@@ -144,6 +146,16 @@ final class VoxSigma
     }
 
     /**
+     * Create a keyword spotting method (CLI only).
+     *
+     * Searches for keywords phonetically and textually in transcription files.
+     */
+    public function kws(): Kws
+    {
+        return (new Kws())->withDriver($this->driver);
+    }
+
+    /**
      * Create a hello method for testing REST connection.
      */
     public function hello(): Hello
@@ -157,6 +169,16 @@ final class VoxSigma
     public function status(): Status
     {
         return (new Status())->withDriver($this->driver);
+    }
+
+    /**
+     * Create an XML to KAR converter (CLI only).
+     *
+     * Converts XML transcription files to KAR format for keyword spotting.
+     */
+    public function xml2kar(): Xml2Kar
+    {
+        return (new Xml2Kar())->withDriver($this->driver);
     }
 
     /**
