@@ -20,6 +20,7 @@ use Vocapia\Voxsigma\Method\Lid;
 use Vocapia\Voxsigma\Method\Part;
 use Vocapia\Voxsigma\Method\Status;
 use Vocapia\Voxsigma\Method\Trans;
+use Vocapia\Voxsigma\Method\Xml2Kar;
 use Vocapia\Voxsigma\Pipeline\Pipeline;
 
 /**
@@ -168,6 +169,16 @@ final class VoxSigma
     public function status(): Status
     {
         return (new Status())->withDriver($this->driver);
+    }
+
+    /**
+     * Create an XML to KAR converter (CLI only).
+     *
+     * Converts XML transcription files to KAR format for keyword spotting.
+     */
+    public function xml2kar(): Xml2Kar
+    {
+        return (new Xml2Kar())->withDriver($this->driver);
     }
 
     /**

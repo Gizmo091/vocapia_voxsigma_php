@@ -32,7 +32,7 @@ final class Kws extends AbstractMethod
     {
         return array_merge(static::commonParameters(), [
             new Parameter('keywordListFile', '-kl', '', Parameter::TYPE_FILE),
-            new Parameter('inputListFile', '-kf', '', Parameter::TYPE_FILE),
+            new Parameter('inputKarList', '-kf', '', Parameter::TYPE_FILE),
             new Parameter('context', '-kc', ''),
         ]);
     }
@@ -76,13 +76,13 @@ final class Kws extends AbstractMethod
     }
 
     /**
-     * Set the input file list (.klst) - list of kar/xml files to search.
+     * Set the input file list (.klst) - list of kar files to search.
      *
      * @param string $path Path to file containing paths (one per line)
      */
-    public function inputListFile(string $path): self
+    public function inputKarList(string $path): self
     {
-        $this->parameters['inputListFile'] = $path;
+        $this->parameters['inputKarList'] = $path;
         $this->inputFileList = null;
         return $this;
     }
@@ -97,14 +97,14 @@ final class Kws extends AbstractMethod
      * $kws->inputFiles(
      *     FileList::create()
      *         ->add('/path/to/file1.kar')
-     *         ->add('/path/to/file2.xml')
+     *         ->add('/path/to/file2.kar')
      * );
      * ```
      */
     public function inputFiles(FileList $list): self
     {
         $this->inputFileList = $list;
-        unset($this->parameters['inputListFile']);
+        unset($this->parameters['inputKarList']);
         return $this;
     }
 
@@ -136,7 +136,7 @@ final class Kws extends AbstractMethod
         }
 
         if ($this->inputFileList !== null) {
-            $this->parameters['inputListFile'] = $this->inputFileList->writeToTempFile($tmpDir);
+            $this->parameters['inputKarList'] = $this->inputFileList->writeToTempFile($tmpDir);
         }
 
         return parent::toRequest();

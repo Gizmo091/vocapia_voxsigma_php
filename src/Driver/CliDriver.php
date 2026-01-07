@@ -200,6 +200,11 @@ final class CliDriver implements DriverInterface
             $args[] = '-'; // Read from stdin
         }
 
+        // Add positional arguments at the end
+        foreach ($request->positionalArgs as $arg) {
+            $args[] = escapeshellarg($arg);
+        }
+
         return $binary . ' ' . implode(' ', $args);
     }
 

@@ -22,6 +22,7 @@ final class Request
      * @param string|null $audioContent Raw audio content (alternative to audioFile)
      * @param string|null $textFile Path to text file (for alignment)
      * @param string|null $stdin Standard input content (for CLI pipeline)
+     * @param array<string> $positionalArgs Positional arguments (CLI only, appended at end)
      */
     public function __construct(
         public readonly string $method,
@@ -31,6 +32,7 @@ final class Request
         public readonly ?string $audioContent = null,
         public readonly ?string $textFile = null,
         public readonly ?string $stdin = null,
+        public readonly array $positionalArgs = [],
     ) {
     }
 
@@ -49,6 +51,7 @@ final class Request
             audioContent: $this->audioContent,
             textFile: $this->textFile,
             stdin: $this->stdin,
+            positionalArgs: $this->positionalArgs,
         );
     }
 
@@ -65,6 +68,7 @@ final class Request
             audioContent: null,
             textFile: $this->textFile,
             stdin: $this->stdin,
+            positionalArgs: $this->positionalArgs,
         );
     }
 
@@ -81,6 +85,7 @@ final class Request
             audioContent: $this->audioContent,
             textFile: $this->textFile,
             stdin: $stdin,
+            positionalArgs: $this->positionalArgs,
         );
     }
 }
