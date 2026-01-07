@@ -15,15 +15,26 @@ use Vocapia\Voxsigma\Parameter\Parameter;
  */
 final class RestDriver implements DriverInterface
 {
+    private bool $syslogOpened = false;
+
+    /**
+     * @param string $baseUrl VoxSigma REST API base URL
+     * @param CredentialInterface $credential Authentication credentials
+     * @param bool $logging Enable logging (default: true)
+     * @param string|null $logFile Log file path (null = use syslog)
+     */
     public function __construct(
         private readonly string $baseUrl,
         private readonly CredentialInterface $credential,
+        private readonly bool $logging = true,
+        private readonly ?string $logFile = null,
     ) {
     }
 
     public function execute(Request $request): Response
     {
         $url = $this->buildUrl($request);
+        $this->log("Executing REST request: $url");
         $postFields = $this->buildPostFields($request);
 
         $curl = curl_init();
@@ -58,6 +69,7 @@ final class RestDriver implements DriverInterface
         curl_close($curl);
 
         if (!is_string($response)) {
+            $this->log("cURL request failed: " . ($error ?: 'Unknown error'), LOG_ERR);
             return Response::failure(
                 error: $error ?: 'cURL request failed',
                 httpStatus: $httpStatus,
@@ -71,8 +83,10 @@ final class RestDriver implements DriverInterface
             return Response::success($response, httpStatus: $httpStatus);
         }
 
+        $errorMsg = $this->extractErrorMessage($response) ?: 'Request failed';
+        $this->log("REST request failed (HTTP $httpStatus): $errorMsg", LOG_ERR);
         return Response::failure(
-            error: $this->extractErrorMessage($response) ?: 'Request failed',
+            error: $errorMsg,
             errorCode: $errorCode,
             httpStatus: $httpStatus,
             xml: $response,
@@ -92,6 +106,7 @@ final class RestDriver implements DriverInterface
         );
 
         $url = $this->buildUrl($asyncRequest);
+        $this->log("Executing async REST request: $url");
         $postFields = $this->buildPostFields($asyncRequest);
 
         $curl = curl_init();
@@ -126,6 +141,7 @@ final class RestDriver implements DriverInterface
         curl_close($curl);
 
         if (!is_string($response)) {
+            $this->log("Failed to start async request: " . ($error ?: 'Unknown error'), LOG_ERR);
             throw new DriverException('Failed to start async request: ' . ($error ?: 'Unknown error'));
         }
 
@@ -133,9 +149,11 @@ final class RestDriver implements DriverInterface
         $sessionId = $this->extractSessionId($response);
 
         if ($sessionId === null) {
+            $this->log("Failed to get session ID from async response", LOG_ERR);
             throw new DriverException('Failed to get session ID from async response: ' . $response);
         }
 
+        $this->log("Async session started: $sessionId");
         return new RestAsyncHandle(
             $sessionId,
             $this->baseUrl,
@@ -391,5 +409,37 @@ final class RestDriver implements DriverInterface
             return trim($matches[1]);
         }
         return null;
+    }
+
+    /**
+     * Log a message to syslog or file.
+     *
+     * @param string $message Message to log
+     * @param int $level Syslog level (LOG_INFO, LOG_ERR, etc.)
+     */
+    private function log(string $message, int $level = LOG_INFO): void
+    {
+        if (!$this->logging) {
+            return;
+        }
+
+        $prefix = '[VoxSigma_PHP] ';
+
+        if ($this->logFile !== null) {
+            $levelName = match ($level) {
+                LOG_ERR => 'ERROR',
+                LOG_WARNING => 'WARNING',
+                LOG_DEBUG => 'DEBUG',
+                default => 'INFO',
+            };
+            $line = date('Y-m-d H:i:s') . " [$levelName] $message" . PHP_EOL;
+            error_log($line, 3, $this->logFile);
+        } else {
+            if (!$this->syslogOpened) {
+                openlog('voxsigma', LOG_PID, LOG_USER);
+                $this->syslogOpened = true;
+            }
+            syslog($level, $prefix . $message);
+        }
     }
 }

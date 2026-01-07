@@ -14,9 +14,19 @@ use Vocapia\Voxsigma\Parameter\Parameter;
  */
 final class CliDriver implements DriverInterface
 {
+    private bool $syslogOpened = false;
+
+    /**
+     * @param string $binPath Path to VoxSigma binaries directory
+     * @param string $tmpDir Temporary directory
+     * @param bool $logging Enable logging (default: true)
+     * @param string|null $logFile Log file path (null = use syslog)
+     */
     public function __construct(
         private readonly string $binPath,
         private readonly string $tmpDir = '/tmp',
+        private readonly bool $logging = true,
+        private readonly ?string $logFile = null,
     ) {
         if (!is_dir($binPath)) {
             throw new DriverException("Binary directory does not exist: $binPath");
@@ -26,6 +36,8 @@ final class CliDriver implements DriverInterface
     public function execute(Request $request): Response
     {
         $command = $this->buildCommand($request);
+        $this->log("Executing: $command");
+
         $descriptors = [
             0 => ['pipe', 'r'], // stdin
             1 => ['pipe', 'w'], // stdout
@@ -35,6 +47,7 @@ final class CliDriver implements DriverInterface
         $process = proc_open($command, $descriptors, $pipes, null, $this->getEnvironment());
 
         if (!is_resource($process)) {
+            $this->log("Failed to start process: $command", LOG_ERR);
             throw new DriverException('Failed to start process: ' . $command);
         }
 
@@ -64,6 +77,7 @@ final class CliDriver implements DriverInterface
             return Response::success($stdout, $exitCode);
         }
 
+        $this->log("Command failed with exit code $exitCode: $stderr", LOG_ERR);
         return Response::failure(
             error: $stderr ?: 'Process failed with exit code ' . $exitCode,
             errorCode: $exitCode,
@@ -75,6 +89,8 @@ final class CliDriver implements DriverInterface
     public function executeAsync(Request $request): AsyncHandle
     {
         $command = $this->buildCommand($request);
+        $this->log("Executing async: $command");
+
         $descriptors = [
             0 => ['pipe', 'r'], // stdin
             1 => ['pipe', 'w'], // stdout
@@ -84,6 +100,7 @@ final class CliDriver implements DriverInterface
         $process = proc_open($command, $descriptors, $pipes, null, $this->getEnvironment());
 
         if (!is_resource($process)) {
+            $this->log("Failed to start async process: $command", LOG_ERR);
             throw new DriverException('Failed to start process: ' . $command);
         }
 
@@ -142,6 +159,7 @@ final class CliDriver implements DriverInterface
         }
 
         $pipelineCommand = implode(' | ', $commands);
+        $this->log("Executing pipeline: $pipelineCommand");
 
         $descriptors = [
             0 => ['pipe', 'r'],
@@ -152,6 +170,7 @@ final class CliDriver implements DriverInterface
         $process = proc_open($pipelineCommand, $descriptors, $pipes, null, $this->getEnvironment());
 
         if (!is_resource($process)) {
+            $this->log("Failed to start pipeline: $pipelineCommand", LOG_ERR);
             throw new DriverException('Failed to start pipeline: ' . $pipelineCommand);
         }
 
@@ -176,6 +195,7 @@ final class CliDriver implements DriverInterface
             return Response::success($stdout, $exitCode);
         }
 
+        $this->log("Pipeline failed with exit code $exitCode: $stderr", LOG_ERR);
         return Response::failure(
             error: $stderr ?: 'Pipeline failed with exit code ' . $exitCode,
             errorCode: $exitCode,
@@ -359,5 +379,37 @@ final class CliDriver implements DriverInterface
         }
 
         return $env;
+    }
+
+    /**
+     * Log a message to syslog or file.
+     *
+     * @param string $message Message to log
+     * @param int $level Syslog level (LOG_INFO, LOG_ERR, etc.)
+     */
+    private function log(string $message, int $level = LOG_INFO): void
+    {
+        if (!$this->logging) {
+            return;
+        }
+
+        $prefix = '[VoxSigma_PHP] ';
+
+        if ($this->logFile !== null) {
+            $levelName = match ($level) {
+                LOG_ERR => 'ERROR',
+                LOG_WARNING => 'WARNING',
+                LOG_DEBUG => 'DEBUG',
+                default => 'INFO',
+            };
+            $line = date('Y-m-d H:i:s') . " [{$levelName}] {$message}" . PHP_EOL;
+            error_log($line, 3, $this->logFile);
+        } else {
+            if (!$this->syslogOpened) {
+                openlog('voxsigma', LOG_PID, LOG_USER);
+                $this->syslogOpened = true;
+            }
+            syslog($level, $prefix . $message);
+        }
     }
 }
