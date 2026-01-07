@@ -113,6 +113,17 @@ final class CliDriver implements DriverInterface
     }
 
     /**
+     * Generate equivalent CLI command for debugging.
+     *
+     * @param Request $request The request to convert
+     * @return string The CLI command
+     */
+    public function toCli(Request $request): string
+    {
+        return $this->buildCommand($request, skipBinaryCheck: true);
+    }
+
+    /**
      * Execute multiple requests as a pipeline.
      *
      * @param Request[] $requests
@@ -176,18 +187,20 @@ final class CliDriver implements DriverInterface
     /**
      * Build the command string for a request.
      *
-     * @throws DriverException If the binary does not exist
+     * @throws DriverException If the binary does not exist (unless skipBinaryCheck is true)
      */
-    private function buildCommand(Request $request, bool $useStdin = false): string
+    private function buildCommand(Request $request, bool $useStdin = false, bool $skipBinaryCheck = false): string
     {
         $binary = $this->binPath . '/' . $request->method;
 
-        if (!is_file($binary)) {
-            throw new DriverException("Binary not found: $binary");
-        }
+        if (!$skipBinaryCheck) {
+            if (!is_file($binary)) {
+                throw new DriverException("Binary not found: $binary");
+            }
 
-        if (!is_executable($binary)) {
-            throw new DriverException("Binary is not executable: $binary");
+            if (!is_executable($binary)) {
+                throw new DriverException("Binary is not executable: $binary");
+            }
         }
 
         $args = $this->translateParameters($request);

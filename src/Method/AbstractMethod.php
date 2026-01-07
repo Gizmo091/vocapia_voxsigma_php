@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Vocapia\Voxsigma\Method;
 
 use Vocapia\Voxsigma\Driver\AsyncHandle;
+use Vocapia\Voxsigma\Driver\CliDriver;
 use Vocapia\Voxsigma\Driver\DriverInterface;
 use Vocapia\Voxsigma\Driver\Request;
 use Vocapia\Voxsigma\Driver\Response;
@@ -205,5 +206,19 @@ abstract class AbstractMethod
         }
 
         return $this->driver->toCurl($this->toRequest(), $async);
+    }
+
+    /**
+     * Generate equivalent CLI command for debugging (CLI driver only).
+     *
+     * @throws \LogicException If driver is not CLI
+     */
+    public function toCli(): string
+    {
+        if (!$this->driver instanceof CliDriver) {
+            throw new \LogicException('toCli() is only available with CLI driver.');
+        }
+
+        return $this->driver->toCli($this->toRequest());
     }
 }

@@ -293,7 +293,23 @@ $config = Configuration::rest(
 $vox = new VoxSigma($config);
 ```
 
-## Debugging (REST)
+## Debugging
+
+### CLI
+
+Generate the equivalent CLI command for debugging:
+
+```php
+$cli = $vox->trans()
+    ->model('fre')
+    ->file('/path/to/audio.wav')
+    ->toCli();
+
+echo $cli;
+// /usr/local/vrxs/bin/vrxs_trans -lfre -f '/path/to/audio.wav'
+```
+
+### REST
 
 Generate the equivalent curl command for debugging:
 
