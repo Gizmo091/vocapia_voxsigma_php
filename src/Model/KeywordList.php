@@ -155,7 +155,7 @@ final class KeywordList
         $lines[] = "#@ invphonw={$this->invphonw}";
         $lines[] = "#@ invwordw={$this->invwordw}";
         $lines[] = "#@ oovphonw={$this->oovphonw}";
-        $lines[] = "#@ oovphonw={$this->oovphonw}";
+        $lines[] = "#@ oovwordw={$this->oovwordw}";
 
         foreach ($this->keywords as $keyword) {
             $lines[] = $keyword->toLine();
