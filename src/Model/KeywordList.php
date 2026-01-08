@@ -94,7 +94,7 @@ final class KeywordList
     }
 
     public function setInVocabularyWordWeight(float $weight): self {
-        $this->invphonw = $weight;
+        $this->invwordw = $weight;
         return $this;
     }
 
