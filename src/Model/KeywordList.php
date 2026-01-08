@@ -25,6 +25,15 @@ final class KeywordList
 
     private int $autoIdCounter = 1;
 
+    /** @var float|null Wet words search weight for word in vocabulary  */
+    private ?float $invwordw = 1;
+    /** @var float|null  Phonetics search weight for word in vocabulary  */
+    private ?float $invphonw = 0.1;
+    /** @var float|null  Words search weight for word not in vocabulary  */
+    private ?float $oovwordw = 0;
+    /** @var float|null  Phonetics search weight for word not in vocabulary  */
+    private ?float $oovphonw = 1;
+
     public static function create(): self
     {
         return new self();
@@ -79,6 +88,26 @@ final class KeywordList
         return $this;
     }
 
+    public function setInVocabularyPhoneWeight(float $weight): self {
+        $this->invphonw = $weight;
+        return $this;
+    }
+
+    public function setInVocabularyWordWeight(float $weight): self {
+        $this->invphonw = $weight;
+        return $this;
+    }
+
+    public function setNotInVocabularyPhoneWeight(float $weight): self {
+        $this->oovphonw = $weight;
+        return $this;
+    }
+    public function setNotInVocabularyWordWeight(float $weight): self {
+        $this->oovwordw = $weight;
+        return $this;
+    }
+
+
     /**
      * Generate a unique ID that doesn't conflict with existing ones.
      */
@@ -123,6 +152,11 @@ final class KeywordList
     public function toFileContent(): string
     {
         $lines = [];
+        $lines[] = "#@ invphonw={$this->invphonw}";
+        $lines[] = "#@ invwordw={$this->invwordw}";
+        $lines[] = "#@ oovphonw={$this->oovphonw}";
+        $lines[] = "#@ oovphonw={$this->oovphonw}";
+
         foreach ($this->keywords as $keyword) {
             $lines[] = $keyword->toLine();
         }
