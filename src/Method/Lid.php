@@ -28,6 +28,7 @@ final class Lid extends AbstractMethod
             new Parameter('duration', '-dl', 'dlopt'),
             new Parameter('threshold', '-ql', 'qlopt'),
             new Parameter('version', '-r', 'ropt'),
+            new Parameter('multilingual', '-q', 'qopt'),
             new Parameter('threads', '-h', '', Parameter::TYPE_VALUE), // CLI only
             new Parameter('languageListFile', '-m', 'llfile', Parameter::TYPE_FILE),
         ]);
@@ -74,6 +75,23 @@ final class Lid extends AbstractMethod
     public function version(string $v): self
     {
         $this->parameters['lidVersion'] = $v;
+        return $this;
+    }
+
+    /**
+     * Enable multilingual processing.
+     * When used with dualChannel(), the max languages applies per channel, not globally.
+     *
+     * @param bool $perSegment If true, language can change per segment; otherwise per speaker
+     * @param int|null $maxLanguages Maximum number of languages (recommended)
+     */
+    public function multilingual(bool $perSegment = false, ?int $maxLanguages = null): self
+    {
+        $value = $perSegment ? 'xs' : 'x';
+        if ($maxLanguages !== null) {
+            $value .= $maxLanguages;
+        }
+        $this->parameters['multilingual'] = $value;
         return $this;
     }
 

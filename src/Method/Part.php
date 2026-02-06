@@ -47,6 +47,7 @@ final class Part extends AbstractMethod
 
     /**
      * Set speaker count with min and/or max.
+     * When used with dualChannel(), the count applies per channel, not globally.
      *
      * @param int|null $min Minimum number of speakers
      * @param int|null $max Maximum number of speakers

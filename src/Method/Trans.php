@@ -32,6 +32,7 @@ final class Trans extends AbstractMethod
             new Parameter('lidVersion', '-r', 'ropt'),
             new Parameter('dualChannel', '-q', 'qopt', Parameter::TYPE_FLAG, 'd'),
             new Parameter('noPartitioning', '-q', 'qopt', Parameter::TYPE_FLAG, 'p'),
+            new Parameter('multilingual', '-q', 'qopt'),
             new Parameter('quality', '-q', 'qopt'),
             new Parameter('threads', '-h', '', Parameter::TYPE_VALUE), // CLI only
             new Parameter('timeout', '-e', '', Parameter::TYPE_VALUE), // CLI only
@@ -65,6 +66,7 @@ final class Trans extends AbstractMethod
 
     /**
      * Set speaker count with min and/or max.
+     * When used with dualChannel(), the count applies per channel, not globally.
      *
      * @param int|null $min Minimum number of speakers
      * @param int|null $max Maximum number of speakers
@@ -111,6 +113,23 @@ final class Trans extends AbstractMethod
     public function speakerRange(int $min, int $max): self
     {
         return $this->speakerCount($min, $max);
+    }
+
+    /**
+     * Enable multilingual processing.
+     * When used with dualChannel(), the max languages applies per channel, not globally.
+     *
+     * @param bool $perSegment If true, language can change per segment; otherwise per speaker
+     * @param int|null $maxLanguages Maximum number of languages (recommended)
+     */
+    public function multilingual(bool $perSegment = false, ?int $maxLanguages = null): self
+    {
+        $value = $perSegment ? 'xs' : 'x';
+        if ($maxLanguages !== null) {
+            $value .= $maxLanguages;
+        }
+        $this->parameters['multilingual'] = $value;
+        return $this;
     }
 
     /**
