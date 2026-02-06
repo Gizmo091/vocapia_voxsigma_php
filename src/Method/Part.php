@@ -25,8 +25,7 @@ final class Part extends AbstractMethod
     {
         return array_merge(static::commonParameters(), [
             new Parameter('model', '-l', 'model'),
-            new Parameter('maxSpeakers', '-k', 'kopt'),
-            new Parameter('speakerRange', '-k', 'kopt'), // Same as maxSpeakers, different format
+            new Parameter('speakerCount', '-k', 'kopt'),
             new Parameter('channel', '-n', 'nopt'),
             new Parameter('dualChannel', '-q', 'qopt', Parameter::TYPE_FLAG, 'd'),
             new Parameter('threads', '-h', '', Parameter::TYPE_VALUE), // CLI only
@@ -47,14 +46,42 @@ final class Part extends AbstractMethod
     }
 
     /**
+     * Set speaker count with min and/or max.
+     *
+     * @param int|null $min Minimum number of speakers
+     * @param int|null $max Maximum number of speakers
+     */
+    public function speakerCount(?int $min = null, ?int $max = null): self
+    {
+        if ($min !== null && $max !== null) {
+            $this->parameters['speakerCount'] = $min . ':' . $max;
+        } elseif ($min !== null) {
+            $this->parameters['speakerCount'] = $min . ':';
+        } elseif ($max !== null) {
+            $this->parameters['speakerCount'] = $max;
+        }
+
+        return $this;
+    }
+
+    /**
      * Set maximum number of speakers.
      *
-     * @param int $k Maximum speakers (default: 10)
+     * @param int $k Maximum speakers
      */
     public function maxSpeakers(int $k): self
     {
-        $this->parameters['maxSpeakers'] = $k;
-        return $this;
+        return $this->speakerCount(max: $k);
+    }
+
+    /**
+     * Set minimum number of speakers.
+     *
+     * @param int $k Minimum speakers
+     */
+    public function minSpeakers(int $k): self
+    {
+        return $this->speakerCount(min: $k);
     }
 
     /**
@@ -65,8 +92,7 @@ final class Part extends AbstractMethod
      */
     public function speakerRange(int $min, int $max): self
     {
-        $this->parameters['speakerRange'] = $min . ':' . $max;
-        return $this;
+        return $this->speakerCount($min, $max);
     }
 
     /**

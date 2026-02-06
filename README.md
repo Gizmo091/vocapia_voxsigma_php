@@ -74,7 +74,8 @@ $credential = new ApiKeyCredential('your-api-key');
 $response = $vox->trans()
     ->model('fre')                    // Language model (fre, eng-usa, etc.)
     ->file('/path/to/audio.wav')      // Audio file
-    ->maxSpeakers(2)                  // Limit speaker count
+    ->speakerCount(max: 2)            // Limit speaker count
+    ->speakerCount(min: 1, max: 4)    // Min/max speakers
     ->dualChannel()                   // Enable dual channel mode
     ->noPartitioning()                // Disable speaker partitioning
     ->verbose()                       // Enable verbose output
@@ -87,8 +88,9 @@ $response = $vox->trans()
 $response = $vox->part()
     ->model('fre')
     ->file('/path/to/audio.wav')
-    ->maxSpeakers(4)
-    ->speakerRange(2, 6)              // Min/max speakers
+    ->speakerCount(min: 2, max: 6)   // Min/max speakers
+    ->minSpeakers(2)                  // Min speakers only
+    ->maxSpeakers(4)                  // Max speakers only
     ->channel(1)                      // Select channel
     ->run();
 ```
