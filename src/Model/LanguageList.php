@@ -115,13 +115,22 @@ final class LanguageList
     }
 
     /**
-     * Write to a temporary file.
+     * Write to a temporary file with a deterministic name based on content hash.
+     *
+     * If the file already exists, it is not rewritten.
      *
      * @return string Path to the temporary file
      */
     public function writeToTempFile(string $tmpDir = '/tmp'): string
     {
-        $path = tempnam($tmpDir, 'voxsigma_ll_') . '.lst';
-        return $this->writeToFile($path);
+        $content = $this->toFileContent();
+        $hash = md5($content);
+        $path = rtrim($tmpDir, '/') . '/llfile_' . $hash . '.lst';
+
+        if (!file_exists($path)) {
+            file_put_contents($path, $content);
+        }
+
+        return $path;
     }
 }
