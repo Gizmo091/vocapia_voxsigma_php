@@ -25,7 +25,7 @@ final class Lid extends AbstractMethod
     {
         return array_merge(static::commonParameters(), [
             new Parameter('model', '-l', 'model'),
-            new Parameter('duration', '-dl', 'dlopt'),
+            new Parameter('duration', '-d', 'dopt'),
             new Parameter('threshold', '-ql', 'qlopt'),
             new Parameter('version', '-r', 'ropt'),
             new Parameter('multilingual', '-q', 'qopt'),
@@ -46,13 +46,25 @@ final class Lid extends AbstractMethod
     }
 
     /**
-     * Set the duration for language identification (seconds).
+     * Set speech duration to process, with optional min and max segment durations.
      *
-     * @param float $sec Duration in seconds (default: 30)
+     * @param float $duration Speech duration to process (seconds)
+     * @param float|null $minSegDuration Minimum segment duration (seconds)
+     * @param float|null $maxSegDuration Maximum segment duration (seconds)
      */
-    public function duration(float $sec): self
+    public function duration(float $duration, ?float $minSegDuration = null, ?float $maxSegDuration = null): self
     {
-        $this->parameters['lidDuration'] = $sec;
+        $value = (string) $duration;
+        if ($minSegDuration !== null) {
+            $value .= ':' . $minSegDuration;
+        }
+        if ($maxSegDuration !== null) {
+            if ($minSegDuration === null) {
+                $value .= ':';
+            }
+            $value .= ':' . $maxSegDuration;
+        }
+        $this->parameters['duration'] = $value;
         return $this;
     }
 
@@ -63,7 +75,7 @@ final class Lid extends AbstractMethod
      */
     public function threshold(float $t): self
     {
-        $this->parameters['lidThreshold'] = $t;
+        $this->parameters['threshold'] = $t;
         return $this;
     }
 
@@ -74,7 +86,7 @@ final class Lid extends AbstractMethod
      */
     public function version(string $v): self
     {
-        $this->parameters['lidVersion'] = $v;
+        $this->parameters['version'] = $v;
         return $this;
     }
 
