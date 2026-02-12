@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Vocapia\Voxsigma\Method;
 
+use Vocapia\Voxsigma\Driver\Request;
+use Vocapia\Voxsigma\Model\LanguageList;
 use Vocapia\Voxsigma\Parameter\Parameter;
 
 /**
@@ -13,6 +15,8 @@ use Vocapia\Voxsigma\Parameter\Parameter;
  */
 final class Trans extends AbstractMethod
 {
+    private ?LanguageList $languageList = null;
+
     public function getMethodName(): string
     {
         return 'vrxs_trans';
@@ -249,6 +253,29 @@ final class Trans extends AbstractMethod
     public function languageListFile(string $path): self
     {
         $this->parameters['languageListFile'] = $path;
+        $this->languageList = null;
+        return $this;
+    }
+
+    /**
+     * Set languages from a LanguageList object.
+     *
+     * A temporary file will be generated automatically.
+     *
+     * @example
+     * ```php
+     * $trans->languageList(
+     *     LanguageList::create()
+     *         ->add('fre')
+     *         ->add('eng-usa')
+     *         ->add('eng-gbr')
+     * );
+     * ```
+     */
+    public function languageList(LanguageList $list): self
+    {
+        $this->languageList = $list;
+        unset($this->parameters['languageListFile']);
         return $this;
     }
 
@@ -261,5 +288,18 @@ final class Trans extends AbstractMethod
     {
         $this->parameters['userModel'] = $model;
         return $this;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function toRequest(): Request
+    {
+        if ($this->languageList !== null) {
+            $tmpDir = $this->parameters['tmpDir'] ?? '/tmp';
+            $this->parameters['languageListFile'] = $this->languageList->writeToTempFile($tmpDir);
+        }
+
+        return parent::toRequest();
     }
 }
