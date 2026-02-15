@@ -71,6 +71,8 @@ $credential = new ApiKeyCredential('your-api-key');
 ### Transcription (trans)
 
 ```php
+use Vocapia\Voxsigma\Model\LanguageList;
+
 $response = $vox->trans()
     ->model('fre')                    // Language model (fre, eng-usa, etc.)
     ->file('/path/to/audio.wav')      // Audio file
@@ -78,6 +80,11 @@ $response = $vox->trans()
     ->speakerCount(min: 1, max: 4)    // Min/max speakers
     ->dualChannel()                   // Enable dual channel mode
     ->noPartitioning()                // Disable speaker partitioning
+    ->languageList(                   // Restrict languages for detection
+        LanguageList::create()
+            ->add('fre')
+            ->add('eng-usa')
+    )
     ->verbose()                       // Enable verbose output
     ->run();
 ```
@@ -98,12 +105,31 @@ $response = $vox->part()
 ### Language Identification (lid)
 
 ```php
+use Vocapia\Voxsigma\Model\LanguageList;
+
 $response = $vox->lid()
     ->model('fre')
     ->file('/path/to/audio.wav')
-    ->duration(30.0)                  // Analysis duration
+    ->duration(30.0)                  // Speech duration to process
+    ->duration(30.0, 5.0, 120.0)     // With min/max segment durations
     ->threshold(0.5)                  // Detection threshold
     ->version('7.1')                  // LID version
+    ->languageList(                   // Restrict to specific languages
+        LanguageList::create()
+            ->add('fre')
+            ->add('eng-usa')
+            ->add('eng-gbr')
+    )
+    ->run();
+```
+
+Or use an existing language list file:
+
+```php
+$response = $vox->lid()
+    ->model('fre')
+    ->file('/path/to/audio.wav')
+    ->languageListFile('/path/to/languages.lst')
     ->run();
 ```
 
