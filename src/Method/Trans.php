@@ -70,22 +70,40 @@ final class Trans extends AbstractMethod
 
     /**
      * Set speaker count with min and/or max.
-     * When used with dualChannel(), the count applies per channel, not globally.
+     * In dualChannel mode, per-channel values can be specified independently.
      *
-     * @param int|null $min Minimum number of speakers
-     * @param int|null $max Maximum number of speakers
+     * @param int|null $min         Minimum speakers (channel 1, or all channels)
+     * @param int|null $max         Maximum speakers (channel 1, or all channels)
+     * @param int|null $channel2Min Minimum speakers for channel 2 (dualChannel only)
+     * @param int|null $channel2Max Maximum speakers for channel 2 (dualChannel only)
      */
-    public function speakerCount(?int $min = null, ?int $max = null): self
-    {
-        if ($min !== null && $max !== null) {
-            $this->parameters['speakerCount'] = $min . ':' . $max;
-        } elseif ($min !== null) {
-            $this->parameters['speakerCount'] = $min . ':';
-        } elseif ($max !== null) {
-            $this->parameters['speakerCount'] = $max;
+    public function speakerCount(
+        ?int $min = null,
+        ?int $max = null,
+        ?int $channel2Min = null,
+        ?int $channel2Max = null,
+    ): self {
+        $spec1 = self::buildSpeakerSpec($min, $max);
+
+        if ($channel2Min !== null || $channel2Max !== null) {
+            $spec2 = self::buildSpeakerSpec($channel2Min, $channel2Max);
+            $this->parameters['speakerCount'] = $spec1 . ',' . $spec2;
+        } else {
+            $this->parameters['speakerCount'] = $spec1;
         }
 
         return $this;
+    }
+
+    private static function buildSpeakerSpec(?int $min, ?int $max): string
+    {
+        if ($min !== null && $max !== null) {
+            return $min . ':' . $max;
+        }
+        if ($min !== null) {
+            return $min . ':';
+        }
+        return (string) $max;
     }
 
     /**
@@ -298,6 +316,16 @@ final class Trans extends AbstractMethod
         if ($this->languageList !== null) {
             $tmpDir = $this->parameters['tmpDir'] ?? '/tmp';
             $this->parameters['languageListFile'] = $this->languageList->writeToTempFile($tmpDir);
+        }
+
+        if (
+            isset($this->parameters['speakerCount'])
+            && str_contains((string) $this->parameters['speakerCount'], ',')
+            && empty($this->parameters['dualChannel'])
+        ) {
+            throw new \InvalidArgumentException(
+                'Per-channel speakerCount (comma-separated) requires dualChannel mode.'
+            );
         }
 
         return parent::toRequest();
