@@ -29,6 +29,7 @@ final class Part extends AbstractMethod
             new Parameter('speakerCount', '-k', 'kopt'),
             new Parameter('channel', '-n', 'nopt'),
             new Parameter('dualChannel', '-q', 'qopt', Parameter::TYPE_FLAG, 'd'),
+            new Parameter('outputSpeakerModel', '-q', 'qopt', Parameter::TYPE_FLAG, 'i'),
             new Parameter('threads', '-h', '', Parameter::TYPE_VALUE), // CLI only
             new Parameter('speakerListFile', '-sl', 'slfile', Parameter::TYPE_FILE),
             new Parameter('speakerModelSet', '-j', '', Parameter::TYPE_FILE), // CLI only
@@ -132,6 +133,23 @@ final class Part extends AbstractMethod
     public function dualChannel(bool $d = true): self
     {
         $this->parameters['dualChannel'] = $d;
+        return $this;
+    }
+
+    /**
+     * Enable speaker model (.spm) binary output.
+     *
+     * When enabled, performs partitioning and returns a binary SPM speaker
+     * model file. The response body contains the raw binary SPM data
+     * (starting with the ASCII magic bytes "HAR"). On error, the response
+     * body contains an XML error document instead.
+     *
+     * Use Response::isSpm() to distinguish a valid SPM binary from an XML
+     * error, and Response::getBody() to access the raw bytes.
+     */
+    public function outputSpeakerModel(bool $i = true): self
+    {
+        $this->parameters['outputSpeakerModel'] = $i;
         return $this;
     }
 

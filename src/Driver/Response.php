@@ -9,6 +9,11 @@ namespace Vocapia\Voxsigma\Driver;
  */
 final class Response
 {
+    /**
+     * SPM file magic bytes (first 3 ASCII characters).
+     */
+    private const SPM_MAGIC = 'HAR';
+
     public function __construct(
         public readonly bool $success,
         public readonly string $xml,
@@ -25,6 +30,29 @@ final class Response
     public function getXml(): string
     {
         return $this->xml;
+    }
+
+    /**
+     * Get the raw response body.
+     *
+     * Alias for getXml() intended for non-XML payloads such as the binary
+     * SPM output produced by Part::outputSpeakerModel().
+     */
+    public function getBody(): string
+    {
+        return $this->xml;
+    }
+
+    /**
+     * Check whether the response body is a valid SPM binary
+     * (i.e. starts with the ASCII magic bytes "HAR").
+     *
+     * When Part::outputSpeakerModel() is enabled, a successful response
+     * returns a binary SPM file. Any other payload is an XML error.
+     */
+    public function isSpm(): bool
+    {
+        return str_starts_with($this->xml, self::SPM_MAGIC);
     }
 
     /**

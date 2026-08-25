@@ -1,5 +1,37 @@
 # Changelog
 
+## 2.8.0
+
+### Nouveautés
+
+**`Part` : sortie du modèle de locuteurs (`.spm`)**
+
+Nouvelle option `outputSpeakerModel()` sur `Part` (CLI `-qi`, REST `qopt=i`). Lorsqu'elle est activée, la méthode effectue le partitionnement et retourne un fichier binaire SPM (modèle acoustique des locuteurs).
+
+```php
+$response = $vox->part()
+    ->model('fre')
+    ->file('/path/audio.wav')
+    ->outputSpeakerModel()
+    ->run();
+
+if ($response->isSpm()) {
+    file_put_contents('/path/speakers.spm', $response->getBody());
+} else {
+    // Erreur — le corps contient un document XML d'erreur
+    echo $response->getXml();
+}
+```
+
+Sur `Response`, deux nouveaux helpers :
+
+- `Response::getBody()` : alias de `getXml()` pour les payloads non-XML (le SPM est un binaire).
+- `Response::isSpm()` : vrai si le corps commence par les octets ASCII `HAR` (magic bytes SPM), faux sinon (typiquement une erreur XML).
+
+Se combine avec les autres flags `-q` / `qopt` : par exemple `->dualChannel()->outputSpeakerModel()` produit `-qdi` (CLI) / `qopt=di` (REST).
+
+---
+
 ## 2.7.0
 
 ### Améliorations
