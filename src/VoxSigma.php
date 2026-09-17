@@ -21,6 +21,7 @@ use Vocapia\Voxsigma\Method\Part;
 use Vocapia\Voxsigma\Method\Status;
 use Vocapia\Voxsigma\Method\Trans;
 use Vocapia\Voxsigma\Method\Xml2Kar;
+use Vocapia\Voxsigma\Method\XvFind;
 use Vocapia\Voxsigma\Pipeline\Pipeline;
 
 /**
@@ -179,6 +180,16 @@ final class VoxSigma
     public function xml2kar(): Xml2Kar
     {
         return (new Xml2Kar())->withDriver($this->driver);
+    }
+
+    /**
+     * Create a speaker embedding comparison method (CLI only).
+     *
+     * Compares the speaker embeddings of a trial file against a reference file.
+     */
+    public function xvfind(): XvFind
+    {
+        return (new XvFind())->withDriver($this->driver);
     }
 
     /**

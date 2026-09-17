@@ -1,5 +1,48 @@
 # Changelog
 
+## 2.9.0
+
+### Nouveautés
+
+**Méthode `xvfind`** (binaire `vr_xvfind`, CLI uniquement)
+
+Recherche de locuteurs par empreinte vocale (*speaker embeddings*) : les locuteurs du fichier d'essai (`trialFile`, *search file*) sont recherchés dans la base de référence (`refFile`, *database file*), qui recense les SPM à fouiller. Chacun des deux fichiers peut contenir un ou plusieurs locuteurs (recherches 1:N, N:1 et N:N).
+
+```php
+$response = $vox->xvfind()
+    ->trialQueries(
+        SpeakerQueryList::create()
+            ->add('SPK_A', 1, 'spk1', '/path/to/interview.spm')
+            ->addQuery(2, 'spk3', '/path/to/meeting.spm')  // Identifiant auto
+    )
+    ->referenceFiles(
+        FileList::create()
+            ->add('/path/to/archive1.spm')
+            ->add('/path/to/archive2.spm')
+    )
+    ->cohortFile('/path/to/cohort.xv')  // -c
+    ->cohortShortListSize(200)          // -n
+    ->prior(0.01)                       // -p
+    ->threshold(0.70)                   // -t
+    ->run();
+
+foreach (SpeakerHit::fromOutput($response->getBody()) as $hit) {
+    echo "{$hit->queryId} : {$hit->speakerId} dans {$hit->spmFile} ({$hit->score})\n";
+}
+```
+
+Les chemins de fichiers déjà constitués restent utilisables via `refFile()` et `trialFile()`, et `output()` (argument positionnel) redirige les résultats vers un fichier au lieu de la sortie standard.
+
+**Modèles `SpeakerQueryList` et `SpeakerQuery`**
+
+Construction du fichier d'essai sans gérer de fichier temporaire. Une requête par ligne : `<id> <canal> <spkid> <spm>`. L'identifiant est repris tel quel sur chaque résultat ; il n'a pas besoin d'être unique, mais `hasDuplicateIds()` permet de le vérifier, les résultats de requêtes homonymes n'étant plus distinguables. Les espaces sont refusés dans l'identifiant et le `spkid` (`\InvalidArgumentException`), le format étant séparé par des espaces ; le chemin du SPM, qui termine la ligne, les accepte.
+
+**Modèle `SpeakerHit`**
+
+Lecture des résultats : `SpeakerHit::fromOutput()` transforme la sortie en objets (`queryId`, `score`, `channel`, `speakerId`, `spmFile`) et ignore les lignes hors format, notamment les messages ajoutés par `verbose()`.
+
+---
+
 ## 2.8.0
 
 ### Nouveautés

@@ -215,6 +215,90 @@ if ($response->isSuccess()) {
 }
 ```
 
+### Speaker Search (xvfind) - CLI only
+
+Look up the speakers of a trial file in a reference database of speaker embeddings.
+Both files may hold one or several speakers, so 1:N, N:1 and N:N searches are all supported:
+
+```php
+use Vocapia\Voxsigma\Model\FileList;
+use Vocapia\Voxsigma\Model\SpeakerHit;
+use Vocapia\Voxsigma\Model\SpeakerQueryList;
+
+$response = $vox->xvfind()
+    ->trialQueries(                          // Speakers to look up
+        SpeakerQueryList::create()
+            ->add('SPK_A', 1, 'spk1', '/path/to/interview.spm')
+            ->addQuery(2, 'spk3', '/path/to/meeting.spm')  // Auto-generated id
+    )
+    ->referenceFiles(                        // Database searched
+        FileList::create()
+            ->add('/path/to/archive1.spm')
+            ->add('/path/to/archive2.spm')
+    )
+    ->cohortFile('/path/to/cohort.xv')       // Cohort vectors
+    ->cohortShortListSize(200)               // Cohort short list size (default: 200)
+    ->prior(0.01)                            // Prior probability that a searched speaker
+                                             // is in the database (default: 0.01)
+    ->threshold(0.70)                        // Similarity threshold (default: 0.70)
+    ->run();
+
+foreach (SpeakerHit::fromOutput($response->getBody()) as $hit) {
+    echo "{$hit->queryId}: {$hit->speakerId} in {$hit->spmFile} ({$hit->score})\n";
+}
+```
+
+Or use existing files:
+
+```php
+$response = $vox->xvfind()
+    ->refFile('/path/to/database.lst')
+    ->trialFile('/path/to/search.lst')
+    ->run();
+```
+
+**Trial file format (search file):** one query per line, space separated.
+
+```
+SPK_A 1 spk1 /path/to/interview.spm
+Q001 2 spk3 /path/to/my recordings/meeting.spm
+```
+Columns: query id, channel number, speaker id, path to the SPM matching the XML
+the speaker was identified in. The path closes the line, so it may hold spaces;
+the leading fields may not.
+
+The query id is echoed back on every hit, so it is what maps a hit to its query.
+It does not have to be unique, but unique ids make the output easier to read back.
+
+**Reference file format (database file):** one SPM path per line, listing every
+SPM to search in.
+
+```
+/path/to/archive1.spm
+/path/to/archive2.spm
+```
+
+**Output:** one hit per line, space separated, on stdout.
+
+```
+SPK_A 0.913 1 spk4 /path/to/archive1.spm
+```
+Columns: query id, proximity score, channel number, speaker id, SPM file (which
+may hold spaces, closing the line).
+
+`SpeakerHit::fromOutput()` parses those lines and ignores anything else, such as
+the extra messages printed by `verbose()`.
+
+Hits can also be written to a file instead of stdout:
+
+```php
+$response = $vox->xvfind()
+    ->refFile('/path/to/database.lst')
+    ->trialFile('/path/to/search.lst')
+    ->output('/path/to/hits.txt')
+    ->run();
+```
+
 ### Hello (REST connection test)
 
 ```php
