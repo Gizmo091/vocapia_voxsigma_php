@@ -6,4 +6,4 @@
 
 # Release
 
-- Les releases suivre la règle suivante : <major>.<minor>.<bugfix> (on fera donc 2.5.0 et non v.2.5)
+- Les releases suivent la règle suivante : <major>.<minor>.<bugfix> (on fera donc 2.5.0 et non v.2.5)
