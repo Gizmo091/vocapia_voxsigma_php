@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.9.1
+
+### Corrections
+
+- Mode CLI : les binaires VoxSigma héritent désormais de l'environnement complet du processus PHP (`PATH`, `HOME`, `LANG`…). Auparavant seules les variables `VRXS_*` leur étaient transmises : ils ne trouvaient plus les outils appelés par leur nom (sox, ffmpeg, file…) et échouaient avec « invalid audio file » sur des fichiers valides.
+- Mode CLI : les variables `VRXS_*` sont transmises même lorsque `$_ENV` est vide (`variables_order` sans `E`, comme dans php.ini-production).
+- Test de non-régression : `php tests/CliDriverEnvironmentTest.php`.
+
+---
+
 ## 2.9.0
 
 ### Nouveautés

@@ -355,16 +355,21 @@ final class CliDriver implements DriverInterface
     /**
      * Get environment variables for the process.
      *
+     * The array given to proc_open() replaces the whole environment of the
+     * child, so it must start from the full environment of the PHP process:
+     * VoxSigma binaries need PATH, HOME, LANG... to find the tools they call.
+     *
      * @return array<string, string>
      */
     private function getEnvironment(): array
     {
-        $env = [];
+        // Full process environment, available whatever variables_order says
+        $env = getenv();
 
-        // Pass through VRXS environment variables
+        // $_ENV may hold VRXS values set at runtime without putenv(): keep them
         foreach ($_ENV as $key => $value) {
-            if (str_starts_with($key, 'VRXS_')) {
-                $env[$key] = $value;
+            if (is_string($key) && str_starts_with($key, 'VRXS_') && is_scalar($value)) {
+                $env[$key] = (string) $value;
             }
         }
 
