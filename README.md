@@ -1,5 +1,10 @@
 # VoxSigma PHP SDK
 
+[![Latest Stable Version](https://img.shields.io/packagist/v/vocapia/voxsigma.svg)](https://packagist.org/packages/vocapia/voxsigma)
+[![Total Downloads](https://img.shields.io/packagist/dt/vocapia/voxsigma.svg)](https://packagist.org/packages/vocapia/voxsigma)
+[![PHP Version](https://img.shields.io/packagist/dependency-v/vocapia/voxsigma/php.svg)](https://packagist.org/packages/vocapia/voxsigma)
+[![License](https://img.shields.io/packagist/l/vocapia/voxsigma.svg)](https://packagist.org/packages/vocapia/voxsigma)
+
 PHP SDK for [Vocapia](https://www.vocapia.com/) VoxSigma speech-to-text, supporting both CLI binaries and REST API.
 
 ## Requirements
