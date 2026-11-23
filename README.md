@@ -93,12 +93,24 @@ $response = $vox->trans()
 
 ```php
 $response = $vox->part()
-    ->model('fre')
     ->file('/path/to/audio.wav')
     ->speakerCount(min: 2, max: 6)   // Min/max speakers
     ->minSpeakers(2)                  // Min speakers only
     ->maxSpeakers(4)                  // Max speakers only
     ->channel(1)                      // Select channel
+    ->dualChannel()                   // -q letters are chained: -qdj@sad2 / qopt=dj@sad2
+    ->includeNonSpeech()              // Include non-speech segments (j)
+    ->sadModel('sad2')                // SAD model (@sad2, always last)
+    ->run();
+
+// CLI only options
+$response = $vox->part()
+    ->file('/path/to/audio.wav')
+    ->speakerThreshold(0.6)           // -a
+    ->segmentFile('/path/to/seg')     // -i
+    ->speakerEmbeddingsFile('/path/to/emb') // -sc
+    ->clusteringThreshold(0.7)        // --cthr=0.7
+    ->segmentPenalty(90)              // --alpha=90
     ->run();
 ```
 

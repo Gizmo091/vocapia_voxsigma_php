@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.10.0
+
+### Nouveautés
+
+**`Part` : options de `vrxs_part` v1.4**
+
+Les lettres de `-q` (CLI) / `qopt` (REST) s'enchaînent : `->dualChannel()->includeNonSpeech()->outputSpeakerModel()->sadModel('sad2')` produit `-qdji@sad2` / `qopt=dji@sad2`. Le modèle SAD est toujours placé en dernier.
+
+- `includeNonSpeech()` : inclure les segments sans parole (`-qj` / `qopt=j`).
+- `sadModel(string)` : modèle de détection de parole (`-q@<model>` / `qopt=@<model>`).
+
+Options CLI uniquement, l'API REST ne les accepte pas :
+
+- `speakerThreshold(float)` (`-a`), `knownSpeakerPrior(float)` (`-b`), `timeout(int)` (`-e`)
+- `segmentFile(string)` (`-i`), `speakerEmbeddingsFile(string)` (`-sc`), `workingDir(string)` (`-w`)
+- `withDtmf(bool|int)` (`-x` ou `-x<num>`), `sequenceId(string)` (`-y`)
+- Réglages fins : `segmentPenalty()` (`--alpha`), `clusterPenalty()` (`--beta`), `clusteringThreshold()` (`--cthr`), `collar()` (`--collar`), `maxSegmentDuration()` (`--msdur`), `sadDownsampling()` (`--sads`), `sadSegmentPenalty()` (`--spty`), `speechFramePenalty()` (`--sfpty`)
+
+### Corrections
+
+- `Part` : `vrxs_part` n'a pas d'option de langue. `model()` n'émet plus `-l<model>` en CLI ; il reste transmis en REST (argument `model`), comme avant.
+- Mode CLI : `priority()` n'émet plus `-p <n>`. L'option est REST uniquement, et en CLI `-p` active l'indice de progression tandis que la valeur était lue comme fichier d'entrée.
+
+---
+
 ## 2.9.1
 
 ### Corrections

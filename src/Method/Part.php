@@ -25,7 +25,6 @@ final class Part extends AbstractMethod
     protected static function defineParameters(): array
     {
         return array_merge(static::commonParameters(), [
-            new Parameter('model', '-l', 'model'),
             new Parameter('speakerCount', '-k', 'kopt'),
             new Parameter('channel', '-n', 'nopt'),
             new Parameter('dualChannel', '-q', 'qopt', Parameter::TYPE_FLAG, 'd'),
@@ -33,11 +32,35 @@ final class Part extends AbstractMethod
             new Parameter('threads', '-h', '', Parameter::TYPE_VALUE), // CLI only
             new Parameter('speakerListFile', '-sl', 'slfile', Parameter::TYPE_FILE),
             new Parameter('speakerModelSet', '-j', '', Parameter::TYPE_FILE), // CLI only
+            new Parameter('model', '', 'model'), // REST only: vrxs_part has no -l option
+            // CLI only (not accepted by the REST API)
+            new Parameter('speakerThreshold', '-a', ''),
+            new Parameter('knownSpeakerPrior', '-b', ''),
+            new Parameter('timeout', '-e', ''),
+            new Parameter('segmentFile', '-i', '', Parameter::TYPE_FILE),
+            new Parameter('withDtmf', '-x', ''),
+            // -q / qopt letters are chained: -qdij@<sad-model> / qopt=dij@<sad-model>
+            new Parameter('includeNonSpeech', '-q', 'qopt', Parameter::TYPE_FLAG, 'j'),
+            new Parameter('sadModel', '-q', 'qopt'),
+            new Parameter('speakerEmbeddingsFile', '-sc', '', Parameter::TYPE_FILE),
+            new Parameter('workingDir', '-w', '', Parameter::TYPE_FILE),
+            new Parameter('sequenceId', '-y', ''),
+            new Parameter('segmentPenalty', '--alpha=', ''),
+            new Parameter('clusterPenalty', '--beta=', ''),
+            new Parameter('clusteringThreshold', '--cthr=', ''),
+            new Parameter('collar', '--collar=', ''),
+            new Parameter('maxSegmentDuration', '--msdur=', ''),
+            new Parameter('sadDownsampling', '--sads=', ''),
+            new Parameter('sadSegmentPenalty', '--spty=', ''),
+            new Parameter('speechFramePenalty', '--sfpty=', ''),
         ]);
     }
 
     /**
-     * Set the model for partitioning.
+     * Set the model (REST only).
+     *
+     * vrxs_part has no language option: the value is sent as the REST `model`
+     * argument but ignored in CLI mode (no -l is passed to the binary).
      *
      * @param string $model Model name
      */
@@ -187,6 +210,187 @@ final class Part extends AbstractMethod
     }
 
     /**
+     * Set the speaker confidence threshold (CLI only, default 0.5).
+     */
+    public function speakerThreshold(float $a): self
+    {
+        $this->parameters['speakerThreshold'] = $a;
+        return $this;
+    }
+
+    /**
+     * Set the known speaker prior (CLI only, default 0.01).
+     */
+    public function knownSpeakerPrior(float $b): self
+    {
+        $this->parameters['knownSpeakerPrior'] = $b;
+        return $this;
+    }
+
+    /**
+     * Set the maximal elapsed time in seconds (CLI only).
+     */
+    public function timeout(int $e): self
+    {
+        $this->parameters['timeout'] = $e;
+        return $this;
+    }
+
+    /**
+     * Use an input segment file (CLI only).
+     */
+    public function segmentFile(string $path): self
+    {
+        $this->parameters['segmentFile'] = $path;
+        return $this;
+    }
+
+    /**
+     * Enable the DTMF decoder and audio event detection (CLI only).
+     *
+     * @param bool|int $x true for -x, an integer for -x<num>, false to disable
+     */
+    public function withDtmf(bool|int $x = true): self
+    {
+        if ($x === false) {
+            unset($this->parameters['withDtmf']);
+        } else {
+            $this->parameters['withDtmf'] = $x === true ? '' : $x;
+        }
+        return $this;
+    }
+
+    /**
+     * Include non-speech segments in the output (-qj / qopt=j).
+     */
+    public function includeNonSpeech(bool $j = true): self
+    {
+        $this->parameters['includeNonSpeech'] = $j;
+        return $this;
+    }
+
+    /**
+     * Set the speech activity detection model (-q@<model> / qopt=@<model>).
+     *
+     * Chained after the other -q letters, always last: -qdj@<model>.
+     */
+    public function sadModel(string $model): self
+    {
+        $this->parameters['sadModel'] = '@' . self::assertSafeToken('sadModel', $model);
+        return $this;
+    }
+
+    /**
+     * Write the speaker embeddings to a file (CLI only, -sc).
+     */
+    public function speakerEmbeddingsFile(string $path): self
+    {
+        $this->parameters['speakerEmbeddingsFile'] = $path;
+        return $this;
+    }
+
+    /**
+     * Set the working directory (CLI only).
+     */
+    public function workingDir(string $path): self
+    {
+        $this->parameters['workingDir'] = $path;
+        return $this;
+    }
+
+    /**
+     * Set the sequence ID (CLI only).
+     */
+    public function sequenceId(string $id): self
+    {
+        $this->parameters['sequenceId'] = self::assertSafeToken('sequenceId', $id);
+        return $this;
+    }
+
+    /**
+     * Set the speaker segment penalty (CLI only, --alpha, default 90.0).
+     */
+    public function segmentPenalty(float $alpha): self
+    {
+        $this->parameters['segmentPenalty'] = $alpha;
+        return $this;
+    }
+
+    /**
+     * Set the cluster penalty (CLI only, --beta, default 70.0).
+     */
+    public function clusterPenalty(float $beta): self
+    {
+        $this->parameters['clusterPenalty'] = $beta;
+        return $this;
+    }
+
+    /**
+     * Set the clustering threshold (CLI only, --cthr, default 0.70).
+     */
+    public function clusteringThreshold(float $cthr): self
+    {
+        $this->parameters['clusteringThreshold'] = $cthr;
+        return $this;
+    }
+
+    /**
+     * Set the collar added on each segment side, in seconds (CLI only, --collar, default 0.21).
+     */
+    public function collar(float $collar): self
+    {
+        $this->parameters['collar'] = $collar;
+        return $this;
+    }
+
+    /**
+     * Set the maximum segment duration, in seconds (CLI only, --msdur, default 60.0).
+     */
+    public function maxSegmentDuration(float $msdur): self
+    {
+        $this->parameters['maxSegmentDuration'] = $msdur;
+        return $this;
+    }
+
+    /**
+     * Set the SAD downsampling factor (CLI only, --sads, default 1).
+     */
+    public function sadDownsampling(int $sads): self
+    {
+        $this->parameters['sadDownsampling'] = $sads;
+        return $this;
+    }
+
+    /**
+     * Set the SAD segment penalty (CLI only, --spty, default 30.0).
+     */
+    public function sadSegmentPenalty(float $spty): self
+    {
+        $this->parameters['sadSegmentPenalty'] = $spty;
+        return $this;
+    }
+
+    /**
+     * Set the speech frame penalty (CLI only, --sfpty, default 0.00).
+     */
+    public function speechFramePenalty(float $sfpty): self
+    {
+        $this->parameters['speechFramePenalty'] = $sfpty;
+        return $this;
+    }
+
+    /**
+     * Values attached to an option (-y<id>, -q@<model>) are not shell-escaped.
+     */
+    private static function assertSafeToken(string $name, string $value): string
+    {
+        if (!preg_match('/^[A-Za-z0-9._:\/-]+$/', $value)) {
+            throw new \InvalidArgumentException(sprintf('Invalid %s: %s', $name, $value));
+        }
+        return $value;
+    }
+
+    /**
      * @inheritDoc
      */
     public function toRequest(): Request
@@ -199,6 +403,13 @@ final class Part extends AbstractMethod
             throw new \InvalidArgumentException(
                 'Per-channel speakerCount (comma-separated) requires dualChannel mode.'
             );
+        }
+
+        // Everything after '@' in -q / qopt is the SAD model name: keep it last.
+        if (isset($this->parameters['sadModel'])) {
+            $sad = $this->parameters['sadModel'];
+            unset($this->parameters['sadModel']);
+            $this->parameters['sadModel'] = $sad;
         }
 
         return parent::toRequest();

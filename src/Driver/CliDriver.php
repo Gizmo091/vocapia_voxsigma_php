@@ -258,7 +258,7 @@ final class CliDriver implements DriverInterface
         }
 
         // Special case: model with forceLanguage modifier
-        if (isset($params['model'])) {
+        if (isset($params['model']) && ($definitions->findByName('model')?->cliOption ?? '') !== '') {
             $forceLanguage = $params['forceLanguage'] ?? false;
             $prefix = $forceLanguage ? '-l:' : '-l';
             $args[] = $prefix . $params['model'];

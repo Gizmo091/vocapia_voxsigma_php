@@ -65,7 +65,7 @@ abstract class AbstractMethod
     {
         return [
             new Parameter('verbose', '-v', 'verbose', Parameter::TYPE_FLAG),
-            new Parameter('priority', '-p:', 'priority'),
+            new Parameter('priority', '', 'priority'), // REST only (-p is the progress flag in CLI)
         ];
     }
 
