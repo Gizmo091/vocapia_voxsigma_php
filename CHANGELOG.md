@@ -1,5 +1,38 @@
 # Changelog
 
+## 3.0.0
+
+### Rupture de compatibilité
+
+**`Trans::model()` force la langue en CLI, comme en REST**
+
+Les drivers CLI et REST exécutent désormais le même traitement. `model('fre')` seul émet `-l:fre` en CLI au lieu de `-lfre` : `vrxs_lid` ne tourne plus avant la transcription. Cela vaut aussi dans un `Pipeline`, sauf si un étage `lid()` précède `trans()` : la langue étant déjà identifiée, `model('fre')` et `forceLanguage(false)` y émettent `-lfre`, et seul `forceLanguage()` explicite émet `-l:fre`. Le comportement REST de `model()` seul ne change pas.
+
+| Requête | CLI | REST |
+|---|---|---|
+| `model('fre')`, avec ou sans `forceLanguage()` | `-l:fre` | `model=fre` |
+| `model('fre')->forceLanguage(false)` | `-lfre -qx1` | `model=fre`, `qopt=x1` |
+| `model('fre')->multilingual(true)` | `-lfre -qxs` | `model=fre`, `qopt=xs` |
+| `multilingual()` sans modèle | `-qx` | `qopt=x` |
+| `model('und')` | `-dl30`, sauf si `lidDuration()` ou `multilingual()` | `model=und` |
+
+- **Pour relancer la LID en CLI**, utiliser `forceLanguage(false)`, ou `multilingual()` si plusieurs langues sont possibles.
+- `model()` + `forceLanguage()` + `multilingual()` lève une `InvalidArgumentException` : les deux demandes se contredisent.
+- `lidDuration()`, `lidThreshold()` et `lidVersion()` sont transmis tels quels mais n'activent pas la LID.
+
+### Corrections
+
+- REST : `forceLanguage()` n'envoie plus `forcelang`, un argument que le serveur rejette.
+- `sadModel()` : le modèle SAD ne s'enchaîne pas avec les autres lettres, contrairement à ce qu'indiquait la 2.10.0. Il est émis à part (`-qdj -q@sad2`, deux champs `qopt` en REST).
+- `quality()` est émis à part (`-q2 -qdxs`) : accolé à `multilingual()`, il était lu comme un nombre de langues, et en REST `qopt=2d` perdait le `d`.
+- Les lettres de `-q` / `qopt` ne dépendent plus de l'ordre d'appel par rapport à `multilingual()` (`dxs`).
+- REST : `executeAsync()` et `toCurl(async: true)` n'envoyaient aucun paramètre (modèle compris).
+- `Pipeline` : les options du premier étage étaient perdues avec `input()`.
+
+Tests : `php tests/DriverParityTest.php`.
+
+---
+
 ## 2.10.0
 
 ### Nouveautés

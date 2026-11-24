@@ -39,7 +39,7 @@ final class Part extends AbstractMethod
             new Parameter('timeout', '-e', ''),
             new Parameter('segmentFile', '-i', '', Parameter::TYPE_FILE),
             new Parameter('withDtmf', '-x', ''),
-            // -q / qopt letters are chained: -qdij@<sad-model> / qopt=dij@<sad-model>
+            // -q letters are chained (-qdij), the SAD model is a separate -q@<model>
             new Parameter('includeNonSpeech', '-q', 'qopt', Parameter::TYPE_FLAG, 'j'),
             new Parameter('sadModel', '-q', 'qopt'),
             new Parameter('speakerEmbeddingsFile', '-sc', '', Parameter::TYPE_FILE),
@@ -272,7 +272,7 @@ final class Part extends AbstractMethod
     /**
      * Set the speech activity detection model (-q@<model> / qopt=@<model>).
      *
-     * Chained after the other -q letters, always last: -qdj@<model>.
+     * Sent as a separate option, it cannot be chained: -qdj -q@<model>.
      */
     public function sadModel(string $model): self
     {
@@ -403,13 +403,6 @@ final class Part extends AbstractMethod
             throw new \InvalidArgumentException(
                 'Per-channel speakerCount (comma-separated) requires dualChannel mode.'
             );
-        }
-
-        // Everything after '@' in -q / qopt is the SAD model name: keep it last.
-        if (isset($this->parameters['sadModel'])) {
-            $sad = $this->parameters['sadModel'];
-            unset($this->parameters['sadModel']);
-            $this->parameters['sadModel'] = $sad;
         }
 
         return parent::toRequest();

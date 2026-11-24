@@ -96,14 +96,7 @@ final class RestDriver implements DriverInterface
     public function executeAsync(Request $request): AsyncHandle
     {
         // Add async parameter
-        $asyncRequest = new Request(
-            method: $request->method,
-            parameters: array_merge($request->parameters, ['async' => true]),
-            audioFile: $request->audioFile,
-            audioContent: $request->audioContent,
-            textFile: $request->textFile,
-            stdin: $request->stdin,
-        );
+        $asyncRequest = $request->withParameters(['async' => true]);
 
         $url = $this->buildUrl($asyncRequest);
         $this->log("Executing async REST request: $url");
@@ -176,14 +169,7 @@ final class RestDriver implements DriverInterface
     public function toCurl(Request $request, bool $async = false): string
     {
         if ($async) {
-            $request = new Request(
-                method: $request->method,
-                parameters: array_merge($request->parameters, ['async' => true]),
-                audioFile: $request->audioFile,
-                audioContent: $request->audioContent,
-                textFile: $request->textFile,
-                stdin: $request->stdin,
-            );
+            $request = $request->withParameters(['async' => true]);
         }
 
         $url = $this->buildUrl($request);
@@ -194,8 +180,11 @@ final class RestDriver implements DriverInterface
 
         // Add translated parameters as form fields
         foreach ($this->translateParameters($request) as $key => $value) {
-            $parts[] = '-F';
-            $parts[] = $key . '=' . $this->escapeArg((string) $value);
+            foreach ((array) $value as $item) {
+                // -F would read a leading '@' as a file upload
+                $parts[] = str_starts_with((string) $item, '@') ? '--form-string' : '-F';
+                $parts[] = $key . '=' . $this->escapeArg((string) $item);
+            }
         }
 
         // Add files
@@ -262,7 +251,7 @@ final class RestDriver implements DriverInterface
 
         // Add all translated parameters as form fields
         foreach ($this->translateParameters($request) as $key => $value) {
-            $fields[$key] = (string) $value;
+            $fields[$key] = is_array($value) ? $value : (string) $value;
         }
 
         // Audio file
@@ -305,7 +294,7 @@ final class RestDriver implements DriverInterface
     /**
      * Translate driver-agnostic parameters to REST query parameters.
      *
-     * @return array<string, string|int|float>
+     * @return array<string, string|int|float|list<string>>
      */
     private function translateParameters(Request $request): array
     {
@@ -317,10 +306,6 @@ final class RestDriver implements DriverInterface
         if ($definitions === null) {
             return $result;
         }
-
-        // Parameters that need special handling (combined into qopt)
-        $qoptParams = ['dualChannel', 'noPartitioning', 'quality'];
-        $qoptValue = '';
 
         // Parameters to skip (handled specially or are files)
         $skipParams = ['async', 'vocabularyFile', 'languageListFile', 'speakerListFile'];
@@ -346,14 +331,8 @@ final class RestDriver implements DriverInterface
                 continue;
             }
 
-            // Special handling for qopt (combining multiple flags)
             if ($param->restParam === 'qopt') {
-                if ($param->type === Parameter::TYPE_FLAG && $value) {
-                    $qoptValue .= $param->flagValue ?? '';
-                } elseif ($param->type === Parameter::TYPE_VALUE) {
-                    $qoptValue .= (string) $value;
-                }
-                continue;
+                continue; // See QOption
             }
 
             // Use Parameter to generate REST field
@@ -363,9 +342,10 @@ final class RestDriver implements DriverInterface
             }
         }
 
-        // Add combined qopt if any
-        if ($qoptValue !== '') {
-            $result['qopt'] = $qoptValue;
+        // Several values are sent as repeated qopt fields
+        $qopt = QOption::values($request);
+        if ($qopt !== []) {
+            $result['qopt'] = count($qopt) === 1 ? $qopt[0] : $qopt;
         }
 
         // Handle async parameter (not in definitions)

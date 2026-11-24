@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Vocapia\Voxsigma\Pipeline;
 
 use Vocapia\Voxsigma\Driver\CliDriver;
-use Vocapia\Voxsigma\Driver\Request;
 use Vocapia\Voxsigma\Driver\Response;
 use Vocapia\Voxsigma\Exception\DriverException;
 use Vocapia\Voxsigma\Method\AbstractMethod;
@@ -118,18 +117,16 @@ final class Pipeline
 
         // Build requests from stages
         $requests = [];
+        $afterLid = false;
         foreach ($this->stages as $i => $stage) {
-            $request = $stage->toRequest();
+            $request = $afterLid && $stage instanceof Trans
+                ? $stage->toRequestAfterLid()
+                : $stage->toRequest();
+            $afterLid = $afterLid || $stage instanceof Lid;
 
             // First stage gets the input file
             if ($i === 0 && $this->inputFile !== null) {
-                $request = new Request(
-                    method: $request->method,
-                    parameters: $request->parameters,
-                    audioFile: $this->inputFile,
-                    audioContent: $request->audioContent,
-                    textFile: $request->textFile,
-                );
+                $request = $request->withAudioFile($this->inputFile);
             }
 
             $requests[] = $request;

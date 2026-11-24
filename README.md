@@ -103,9 +103,9 @@ $response = $vox->part()
     ->minSpeakers(2)                  // Min speakers only
     ->maxSpeakers(4)                  // Max speakers only
     ->channel(1)                      // Select channel
-    ->dualChannel()                   // -q letters are chained: -qdj@sad2 / qopt=dj@sad2
+    ->dualChannel()                   // -q letters are chained: -qdj / qopt=dj
     ->includeNonSpeech()              // Include non-speech segments (j)
-    ->sadModel('sad2')                // SAD model (@sad2, always last)
+    ->sadModel('sad2')                // SAD model (separate -q@sad2)
     ->run();
 
 // CLI only options

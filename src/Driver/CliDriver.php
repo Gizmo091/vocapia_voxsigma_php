@@ -259,15 +259,21 @@ final class CliDriver implements DriverInterface
 
         // Special case: model with forceLanguage modifier
         if (isset($params['model']) && ($definitions->findByName('model')?->cliOption ?? '') !== '') {
-            $forceLanguage = $params['forceLanguage'] ?? false;
-            $prefix = $forceLanguage ? '-l:' : '-l';
-            $args[] = $prefix . $params['model'];
+            if ($request->method === 'vrxs_trans' && $params['model'] === 'und') {
+                // Same as vr_wsapi: no language, LID on 30s unless configured otherwise
+                if (!isset($params['lidDuration']) && !isset($params['multilingual'])) {
+                    $args[] = '-dl30';
+                }
+            } else {
+                $forceLanguage = $params['forceLanguage'] ?? false;
+                $args[] = ($forceLanguage ? '-l:' : '-l') . $params['model'];
+            }
         }
 
         // Parameters to skip (handled specially)
         $skipParams = ['model', 'forceLanguage', 'outputFile', 'tmpDir'];
 
-        // Collect combined options (like -q with d, p, and quality value)
+        // Collect combined options (-q is built by QOption)
         $combinedOptions = [];
 
         // Iterate through all parameters and translate using definitions
@@ -284,6 +290,10 @@ final class CliDriver implements DriverInterface
             // Skip if CLI option is empty (REST-only parameter)
             if ($param->cliOption === '') {
                 continue;
+            }
+
+            if ($param->cliOption === '-q') {
+                continue; // See QOption
             }
 
             // Handle combined options (multiple params sharing same CLI option)
@@ -316,6 +326,10 @@ final class CliDriver implements DriverInterface
             if ($value !== '') {
                 $args[] = $option . $value;
             }
+        }
+
+        foreach (QOption::values($request) as $value) {
+            $args[] = '-q' . $value;
         }
 
         // Handle outputFile and tmpDir (not in Parameter definitions but in AbstractMethod)

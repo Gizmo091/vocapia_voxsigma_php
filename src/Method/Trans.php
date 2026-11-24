@@ -29,7 +29,7 @@ final class Trans extends AbstractMethod
     {
         return array_merge(static::commonParameters(), [
             new Parameter('model', '-l', 'model'),
-            new Parameter('forceLanguage', '-l:', 'forcelang', Parameter::TYPE_FLAG),
+            new Parameter('forceLanguage', '-l:', '', Parameter::TYPE_FLAG), // REST forces the language by default
             new Parameter('speakerCount', '-k', 'kopt'),
             new Parameter('lidDuration', '-dl', 'dlopt'),
             new Parameter('lidThreshold', '-ql', 'qlopt'),
@@ -50,6 +50,9 @@ final class Trans extends AbstractMethod
     /**
      * Set the language/model for transcription.
      *
+     * The language is forced (no language identification) unless multilingual()
+     * or forceLanguage(false) is used. With 'und' the language is identified.
+     *
      * @param string $model Language code (e.g., 'fre', 'eng-usa', 'eng-gbr')
      */
     public function model(string $model): self
@@ -59,8 +62,11 @@ final class Trans extends AbstractMethod
     }
 
     /**
-     * Force the specified language (no automatic language detection).
-     * Requires model() to be set.
+     * Force the language given to model(), which is the default.
+     *
+     * Pass false to run language identification, with a single language for
+     * the whole file (-qx1 / qopt=x1). If multilingual() is also used, its value
+     * takes precedence. Cannot be true together with model() and multilingual().
      */
     public function forceLanguage(bool $force = true): self
     {
@@ -313,6 +319,24 @@ final class Trans extends AbstractMethod
      */
     public function toRequest(): Request
     {
+        return $this->buildRequest(false);
+    }
+
+    /**
+     * Build the request for a pipeline stage that follows a Lid stage.
+     *
+     * The language has already been identified: it is only forced on explicit
+     * request, and no further identification is asked for.
+     *
+     * @internal
+     */
+    public function toRequestAfterLid(): Request
+    {
+        return $this->buildRequest(true);
+    }
+
+    private function buildRequest(bool $afterLid): Request
+    {
         if ($this->languageList !== null) {
             $tmpDir = $this->parameters['tmpDir'] ?? '/tmp';
             $this->parameters['languageListFile'] = $this->languageList->writeToTempFile($tmpDir);
@@ -328,6 +352,40 @@ final class Trans extends AbstractMethod
             );
         }
 
-        return parent::toRequest();
+        return parent::toRequest()->withParameters($this->languageParameters($afterLid));
+    }
+
+    /**
+     * Resolve how the language is chosen, identically for both drivers.
+     *
+     * vr_wsapi forces the language (-l:) unless qopt contains 'x'.
+     *
+     * @return array<string, mixed>
+     */
+    private function languageParameters(bool $afterLid): array
+    {
+        $model = $this->parameters['model'] ?? null;
+        if ($model === null || $model === 'und') {
+            return [];
+        }
+
+        $force = $this->parameters['forceLanguage'] ?? null;
+
+        if (isset($this->parameters['multilingual'])) {
+            if ($force === true) {
+                throw new \InvalidArgumentException(
+                    'forceLanguage() cannot be combined with multilingual().'
+                );
+            }
+            return ['forceLanguage' => false];
+        }
+
+        if ($afterLid) {
+            return ['forceLanguage' => $force === true];
+        }
+
+        return $force === false
+            ? ['forceLanguage' => false, 'multilingual' => 'x1']
+            : ['forceLanguage' => true];
     }
 }
